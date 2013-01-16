@@ -7,7 +7,7 @@ crypto:
 	ocamlfind ocamlc -linkpkg -package cryptokit crypto.ml
 
 clean:
-	rm *.{cmi,cmo}
+	rm *.{cmi,cmo} a.out
 
 run:
 	./a.out

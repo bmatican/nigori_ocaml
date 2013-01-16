@@ -1,0 +1,3 @@
+Understanding RFC2898:
+  "Here, INT (i) is a four-octet encoding of the integer i, most significant octet first." -- no example given.
+  Assuming this means get the first four non-zero octets of an integer.
