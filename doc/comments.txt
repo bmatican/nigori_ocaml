@@ -7,3 +7,4 @@ Understanding RFC2898:
 Understanding Nigori spec:
   Section 1.4:
     In PBKDF2, PRF=SHA1 actually means PRF=HMAC_SHA1
+    In EncDet, it is very unclear that F1 and F2 are the two halves of HMAC(K3, P)

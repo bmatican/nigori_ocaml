@@ -1,9 +1,51 @@
-open Cryptokit
 open Printf
 open String
 open List
+open Cryptokit
 
 let to_hex message = Cryptokit.(transform_string (Hexa.encode ()) message)
+
+module InitializationVector = struct
+  type t = string
+  exception InvalidVectorSize
+  let valid_vector_size = 16
+
+  let create value = 
+    if String.length value != valid_vector_size
+    then raise InvalidVectorSize
+    else value
+end
+
+module AES256 = struct
+  type t = string
+  type key = string
+  type text = string
+  exception InvalidKeyLength (* Accepts 16, 24, 32 bytes *)
+
+  let aes_block_size = 16
+
+  module R = Cryptokit.Random
+  let random_seed = R.(string secure_rng 55)
+  let random_gen size = R.string (R.pseudo_rng random_seed) size
+
+  let get_random_iv () = random_gen aes_block_size
+
+  let apply iv key text =
+    try 
+      let transform = Cryptokit.(
+        Cipher.aes
+          ~iv:iv
+          ~mode:Cipher.CBC
+          ~pad:Padding._8000
+          key
+          Cipher.Encrypt
+      ) in
+      Cryptokit.(transform_string transform text)
+    with 
+      exn -> raise InvalidKeyLength
+
+  let to_string message = to_hex message
+end
 
 module Utils = struct
   exception InvalidListLength
@@ -44,16 +86,10 @@ module Utils = struct
     result
 
   let concat a b = a ^ b
+
   let concat_list l = List.fold_left concat "" l
-end
 
-module SHA1 = struct
-  type t = string
   exception InvalidHashLength
-
-  let apply message = Cryptokit.(hash_string (Hash.sha1 ()) message)
-
-  let to_string message = to_hex message
 
   let xor a b = 
     if String.length a == 0
@@ -73,17 +109,30 @@ module SHA1 = struct
   let xor_list l = List.fold_left xor "" l
 end
 
+module SHA1 = struct
+  type t = string
+  type message = string
+
+  let apply message = Cryptokit.(hash_string (Hash.sha1 ()) message)
+
+  let to_string message = to_hex message
+end
+
 module HMAC = struct
   type t = string
+  type key = string
+  type message = string
   let apply key message = Cryptokit.(hash_string (MAC.hmac_sha1 key) message)
   let to_string message = to_hex message
 end
 
 module PBKDF2 = struct
   type t = string
+  type hash = SHA1.t
   type password = string
   type salt = string
-  type hash = SHA1.t
+  type count = int
+  type dk_length = int
   exception DerivedKeyTooLong
 
   let hash_length = 20 (* sha1 output *)
@@ -105,7 +154,7 @@ module PBKDF2 = struct
 
   let f password salt count iterations = 
     let result = u_compute password salt count iterations 1 [] in 
-    SHA1.xor_list result
+    Utils.xor_list result
 
   let rec t_compute password salt count current_step steps last_length result = 
     let f_result = f password salt count current_step in
@@ -126,4 +175,41 @@ module PBKDF2 = struct
       Utils.concat_list pieces
 
   let to_string message = to_hex message
+end
+
+module Enc = struct
+  type t = string
+  type key = string
+  type plaintext = string
+
+  let create : InitializationVector.t -> AES256.t -> HMAC.t -> t = 
+    fun iv cipher hmac -> Utils.concat_list [iv; cipher; hmac]
+
+  let enc key1 key2 plaintext = 
+    let iv = AES256.get_random_iv () in
+    let cipher = AES256.apply iv key1 plaintext in
+    let hmac = HMAC.apply key2 cipher in
+    create iv cipher hmac
+
+  let enc_det key1 key2 key3 plaintext = 
+    let temp = HMAC.apply key3 plaintext in
+    let half = (String.length temp) / 2 in
+    let f1 = String.sub temp 0 half in
+    let f2 = String.sub temp half half in
+    let g = Utils.xor f1 f2 in
+    let cipher = AES256.apply g key1 plaintext in
+    let hmac = HMAC.apply key2 cipher in
+    create g cipher hmac
+
+  let to_string message = to_hex message
+end
+
+(* TODO: put this in when we have it *)
+module DSA = struct
+  type t = string
+  type public_key = string
+  type secret_key = string
+  let pub_key secret_key = ""
+  let sign secret_key message = message
+  let verify public_key message signature = true
 end
