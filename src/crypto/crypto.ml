@@ -5,17 +5,14 @@ open List
 
 let to_hex message = Cryptokit.(transform_string (Hexa.encode ()) message)
 
-(* TODO: figure out if I need to do things this way... *)
-module Nigori_octet_encoding = struct
+module Utils = struct
   exception InvalidListLength
-
-  let rec take_first_helper l n = 
-    if n <= 0 then []
-    else match l with
-      [] -> raise InvalidListLength
-      | h :: t -> h :: take_first_helper t (n - 1)
-
   let take_first l n = 
+    let rec take_first_helper l n = 
+      if n <= 0 then []
+      else match l with
+        [] -> raise InvalidListLength
+        | h :: t -> h :: take_first_helper t (n - 1) in
     List.rev (take_first_helper l n)
 
   let rec pad_with_zeros l n = 
@@ -45,19 +42,16 @@ module Nigori_octet_encoding = struct
       String.set result index (char_of_int nr) in
     List.iteri set_result first_four;
     result
-    (* to_hex result *)
 
   let concat a b = a ^ b
   let concat_list l = List.fold_left concat "" l
 end
 
-module Nigori_sha1 = struct
+module SHA1 = struct
   type t = string
   exception InvalidHashLength
 
   let apply message = Cryptokit.(hash_string (Hash.sha1 ()) message)
-
-  let create_message message salt = message ^ salt
 
   let to_string message = to_hex message
 
@@ -79,17 +73,17 @@ module Nigori_sha1 = struct
   let xor_list l = List.fold_left xor "" l
 end
 
-module Nigori_hmac = struct
+module HMAC = struct
   type t = string
-  let apply key message = Cryptokit.(hash_string (MAC.hmac_sha256 key) message)
+  let apply key message = Cryptokit.(hash_string (MAC.hmac_sha1 key) message)
   let to_string message = to_hex message
 end
 
-module Nigori_pbkdf2 = struct
+module PBKDF2 = struct
   type t = string
-  type u = Nigori_sha1.t
   type password = string
   type salt = string
+  type hash = SHA1.t
   exception DerivedKeyTooLong
 
   let hash_length = 20 (* sha1 output *)
@@ -101,21 +95,17 @@ module Nigori_pbkdf2 = struct
       let u_partial = (* U_i from RFC2898 *)
         if current_count == 1 (* TODO: is this correct? *)
         then 
-          Nigori_octet_encoding.concat 
+          Utils.concat 
             salt 
-            (Nigori_octet_encoding.four_octet_encode iterations)
+            (Utils.four_octet_encode iterations)
         else List.hd result in 
-      let message = Nigori_sha1.(apply (create_message password u_partial)) in
+      let message = HMAC.apply password u_partial in
       let next = message :: result in 
-      (*
-      let message = Nigori_hmac.apply password u_partial in
-      let next = message :: result in 
-      *)
       u_compute password salt count iterations (current_count + 1) next
 
   let f password salt count iterations = 
     let result = u_compute password salt count iterations 1 [] in 
-    Nigori_sha1.xor_list result
+    SHA1.xor_list result
 
   let rec t_compute password salt count current_step steps last_length result = 
     let f_result = f password salt count current_step in
@@ -133,16 +123,7 @@ module Nigori_pbkdf2 = struct
       let l = int_of_float (ceil ((float dk_length) /. (float hash_length))) in
       let r = dk_length - (l - 1) * hash_length in
       let pieces = t_compute password salt count 1 l r [] in
-      Nigori_octet_encoding.concat_list pieces
+      Utils.concat_list pieces
 
   let to_string message = to_hex message
 end
-
-let () = Printf.printf "%s\n" 
-  Nigori_octet_encoding.(four_octet_encode 97);;
-let () = Printf.printf "%s\n" 
-  Nigori_sha1.(to_string (apply "foobar"));;
-let () = Printf.printf "%s\n" 
-  Nigori_hmac.(to_string (apply "foo" "bar"));;
-let () = Printf.printf "%s\n" 
-  Nigori_pbkdf2.(to_string (apply "password" "salt" 1 20));;

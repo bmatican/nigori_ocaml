@@ -1,3 +1,9 @@
 Understanding RFC2898:
   "Here, INT (i) is a four-octet encoding of the integer i, most significant octet first." -- no example given.
-  Assuming this means get the first four non-zero octets of an integer.
+  Assuming this means get the first four non-zero octets of an integer
+
+  PRF(P, S) actually means HMAC_SHA1 with KEY=P and MESSAGE=S
+
+Understanding Nigori spec:
+  Section 1.4:
+    In PBKDF2, PRF=SHA1 actually means PRF=HMAC_SHA1

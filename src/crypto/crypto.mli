@@ -1,33 +1,32 @@
-module Nigori_octet_encoding : sig
+module Utils : sig
   val four_octet_encode : int -> string
   val concat : string -> string -> string
   val concat_list : string list -> string
 end
 
-module Nigori_sha1 : sig 
+module SHA1 : sig 
   type t
   exception InvalidHashLength
   val apply : string -> t
-  val create_message : string -> string -> string
   val to_string : t -> string
   val xor : t -> t -> t
   val xor_list : t list -> t
 end
 
-module Nigori_hmac : sig
+module HMAC : sig
   type t
   val apply : string -> string -> t
   val to_string : t -> string
 end
 
-module Nigori_pbkdf2 : sig
+module PBKDF2 : sig
   type t
-  type u
-  type password
-  type salt
+  type hash
+  type password = string
+  type salt = string
   exception DerivedKeyTooLong
 
-  val f : password -> salt -> int -> int -> u
+  val f : password -> salt -> int -> int -> hash
   val apply : password -> salt -> int -> int -> t
   val to_string : t -> string
 end
