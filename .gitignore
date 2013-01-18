@@ -8,3 +8,7 @@
 *.cmx
 *.cmxs
 *.cmxa
+
+# no executables either
+*.byte
+*.native

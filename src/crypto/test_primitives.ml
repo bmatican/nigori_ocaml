@@ -1,7 +1,7 @@
 open OUnit
 open List
 
-module C = Crypto
+module C = Primitives
 
 (* Custom local_assert_equal to print problems. *)
 let local_assert_equal a b = 

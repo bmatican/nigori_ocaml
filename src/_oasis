@@ -1,0 +1,29 @@
+OASISFormat: 0.3
+Name:        Nigori
+Version:     0.1
+Synopsis:    The Nigori encrypted KV store.
+Authors:     Bogdan-Alexandru Matican
+License:     Apache
+BuildTools:         ocamlbuild
+
+Library crypto
+  Modules:            Primitives
+  BuildDepends:       cryptokit
+  Path:               crypto/
+  Install:            false
+
+Executable nigori
+  Path:               .
+  MainIs:             main.ml
+  BuildDepends:       crypto
+  Install:            false
+  
+Executable test_primitives
+  Path:               crypto/
+  MainIs:             test_primitives.ml
+  BuildDepends:       oUnit, crypto
+  Install:            false
+
+Test test_primitives
+  Run:                true
+  Command:            $test_primitives
