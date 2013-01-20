@@ -1,4 +1,4 @@
-.PHONY: all clean
+.PHONY: all clean test
 
 all: 
 	ocaml setup.ml -configure 

@@ -4,26 +4,45 @@ Version:     0.1
 Synopsis:    The Nigori encrypted KV store.
 Authors:     Bogdan-Alexandru Matican
 License:     Apache
-BuildTools:         ocamlbuild
+BuildTools:  ocamlbuild
 
+# Libraries 
 Library crypto
   Modules:            Primitives
   BuildDepends:       cryptokit
   Path:               crypto/
   Install:            false
 
+Library test
+  Modules:            Common
+  BuildDepends:       crypto
+  Path:               test/
+  Install:            false
+
+# Main executable
 Executable nigori
   Path:               .
   MainIs:             main.ml
   BuildDepends:       crypto
   Install:            false
-  
+ 
+# Tests
 Executable test_primitives
-  Path:               crypto/
+  Path:               test/
   MainIs:             test_primitives.ml
-  BuildDepends:       oUnit, crypto
+  BuildDepends:       oUnit, crypto, test
   Install:            false
 
 Test test_primitives
   Run:                true
   Command:            $test_primitives
+
+Executable test_utils
+  Path:               test/
+  MainIs:             test_utils.ml
+  BuildDepends:       oUnit, crypto, test
+  Install:            false
+
+Test test_utils
+  Run:                true
+  Command:            $test_utils

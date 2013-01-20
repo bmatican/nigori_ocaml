@@ -14,15 +14,6 @@ module AES256 : sig
   val to_string : t -> string
 end
 
-module Utils : sig
-  val four_octet_encode : int -> string
-  val concat : string -> string -> string
-  val concat_list : string list -> string
-  exception InvalidHashLength
-  val xor : string -> string -> string
-  val xor_list : string list -> string
-end
-
 module SHA1 : sig 
   type t
   type message = string
