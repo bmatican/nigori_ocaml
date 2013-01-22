@@ -1,5 +1,5 @@
 OASISFormat: 0.3
-Name:        Nigori
+Name:        nigori
 Version:     0.1
 Synopsis:    The Nigori encrypted KV store.
 Authors:     Bogdan-Alexandru Matican
@@ -8,7 +8,7 @@ BuildTools:  ocamlbuild
 
 # Libraries 
 Library crypto
-  Modules:            Primitives
+  Modules:            Primitives, Constants, Derivations
   BuildDepends:       cryptokit
   Path:               crypto/
   Install:            false
