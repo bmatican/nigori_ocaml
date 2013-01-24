@@ -1,16 +1,22 @@
+module Random : sig
+  val generate : int -> string
+end
+
 module InitializationVector : sig
   type t
   exception InvalidVectorSize
   val create : string -> t
+  val create_random : unit -> t
+  val to_string : t -> string
 end
 
 module AES256 : sig
   type t
   type key = string
-  type text = string
   exception InvalidKeyLength (* Accepts 16, 24, 32 bytes *)
-  val get_random_iv : unit -> InitializationVector.t
-  val apply : InitializationVector.t -> key -> text -> t
+  val encrypt : InitializationVector.t -> key -> string -> t
+  (* TODO: Should only decrypt type t, but we can't cast otherwise... *)
+  val decrypt : InitializationVector.t -> key -> string -> string
   val to_string : t -> string
 end
 
@@ -53,8 +59,8 @@ end
 
 module DSA : sig
   type t
-  type public_key
-  type secret_key
+  type public_key = string
+  type secret_key = string
   val pub_key : secret_key -> public_key
   val sign : secret_key -> string -> t
   val verify : public_key -> string -> t -> bool

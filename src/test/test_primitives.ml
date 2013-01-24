@@ -13,7 +13,7 @@ let test_sha1 () =
   let f test = 
     let m = List.nth test 0 in
     let expected = List.nth test 1 in
-    let result = P.SHA1.(to_string (apply m)) in
+    let result = Utils.to_hex P.SHA1.(to_string (apply m)) in
     (expected, result) in
   test_function valid_sha1 f
 
@@ -28,16 +28,16 @@ let test_hmac () =
     let key  = List.nth test 0 in
     let message = List.nth test 1 in
     let expected = List.nth test 2 in
-    let result = P.HMAC.(to_string (apply key message)) in
+    let result = Utils.to_hex P.HMAC.(to_string (apply key message)) in
     (expected, result) in
   test_function valid_hmac f
 
-(* Test cases for hmac. *)
+(* Test cases for pbkdf2. *)
 let valid_pbkdf2 = [
   ["password"; "salt"; "1"; "20"; "0c60c80f961f0e71f3a9b524af6012062fe037a6"];
 ]
 
-(* Test function for hmac. *)
+(* Test function for pbkdf2. *)
 let test_pbkdf2 () =
   let f test = 
     let password = List.nth test 0 in
@@ -45,9 +45,30 @@ let test_pbkdf2 () =
     let iterations = int_of_string (List.nth test 2) in
     let length = int_of_string (List.nth test 3) in
     let expected = List.nth test 4 in
-    let result = P.PBKDF2.(to_string (apply password salt iterations length)) in
+    let result = Utils.to_hex P.PBKDF2.(to_string (apply password salt iterations length)) in
     (expected, result) in
   test_function valid_pbkdf2 f
+
+(* Test cases for aes256. *)
+let valid_aes256 = [
+  ["1234567890123456"; "1234567890123456"; "testing";];
+  [""; "1111111111111111"; "random";];
+]
+
+(* Test function for aes256. *)
+let test_aes256 () =
+  let f test = 
+    let base_iv = List.nth test 0 in
+    let iv = 
+      if String.length base_iv == 0
+      then P.InitializationVector.create_random ()
+      else P.InitializationVector.create base_iv in
+    let key = List.nth test 1 in
+    let text = List.nth test 2 in
+    let cipher = P.AES256.(to_string (encrypt iv key text)) in
+    let result = P.AES256.decrypt iv key cipher in
+    (text, result) in
+  test_function valid_aes256 f
 
 (* Test fixtures combined. *)
 let test_fixtures = 
@@ -56,6 +77,7 @@ let test_fixtures =
     ("sha1", test_sha1);
     ("hmac", test_hmac);
     ("pbkdf2", test_pbkdf2);
+    ("aes256", test_aes256);
   ] in
   make_fixtures name tests
 
