@@ -70,6 +70,23 @@ let test_aes256 () =
     (text, result) in
   test_function valid_aes256 f
 
+let valid_dsa = [
+  ["test1";];
+  ["test2";];
+]
+
+(* Test function for DSA. *)
+let test_dsa () =
+  let keys = P.DSA.new_key "" in
+  let pub_key = fst keys in
+  let priv_key = snd keys in
+  let f test = 
+    let message = List.nth test 0 in
+    let signed = P.DSA.sign message priv_key in
+    let check = P.DSA.verify message signed pub_key in
+    ((string_of_bool true), (string_of_bool check)) in
+  test_function valid_dsa f
+
 (* Test fixtures combined. *)
 let test_fixtures = 
   let name = "Primitives" in
@@ -78,6 +95,7 @@ let test_fixtures =
     ("hmac", test_hmac);
     ("pbkdf2", test_pbkdf2);
     ("aes256", test_aes256);
+    ("dsa", test_dsa);
   ] in
   make_fixtures name tests
 

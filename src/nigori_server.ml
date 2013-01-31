@@ -1,7 +1,7 @@
 open Primitives (* testing if this works *)
 
 let main () = 
-  Printf.printf "Running main\n"
+  Printf.printf "Running server main\n"
 
 let _ = 
   main ()

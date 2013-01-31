@@ -8,9 +8,15 @@ BuildTools:  ocamlbuild
 
 # Libraries 
 Library crypto
-  Modules:            Primitives, Constants, Derivations
-  BuildDepends:       cryptokit
+  Modules:            Constants, Primitives, Derivations, Messages
+  BuildDepends:       cryptokit, gmp
   Path:               crypto/
+  Install:            false
+
+Library server
+  Modules:            Revision, Nonce
+  BuildDepends:       crypto, cohttp, unix
+  Path:               server/
   Install:            false
 
 Library test
@@ -20,10 +26,10 @@ Library test
   Install:            false
 
 # Main executable
-Executable nigori
+Executable nigori_server
   Path:               .
-  MainIs:             main.ml
-  BuildDepends:       crypto
+  MainIs:             nigori_server.ml
+  BuildDepends:       crypto, server
   Install:            false
  
 # Tests

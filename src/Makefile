@@ -1,13 +1,19 @@
-.PHONY: all clean test
+.PHONY: all clean test oasis
 
-all: 
+OASIS_FILE=_oasis
+
+all: oasis
 	ocaml setup.ml -configure 
 	ocaml setup.ml -build
 
-test: 
+test: oasis
 	ocaml setup.ml -configure --enable-tests
 	ocaml setup.ml -build
 	ocaml setup.ml -test 
+
+oasis: $(OASIS_FILE)
+	oasis setup
+	make clean
 
 clean:
 	ocamlbuild -clean

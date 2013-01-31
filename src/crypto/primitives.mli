@@ -57,11 +57,51 @@ module Enc : sig
   val to_string : t -> string
 end
 
+open Cryptokit
+
 module DSA : sig
-  type t
-  type public_key = string
-  type secret_key = string
-  val pub_key : secret_key -> public_key
-  val sign : secret_key -> string -> t
-  val verify : public_key -> string -> t -> bool
+
+  type group_info =
+      { size : int;
+	p : Gmp.Z.t;
+	q : Gmp.Z.t;
+	base : Gmp.Z.t}
+
+  (* This data-type is used to hold information about the group that the
+    signatures will be computed in.  [size] is the size of the prime [p] in
+    bits, [p] and [q] are the primes used in DSA, and [base] is a generator of
+    the unique cyclic group of order [q] in $(\mathbb{Z}/\mathbb{Z}_p)^*$ *)
+
+  type key = group_info * Gmp.Z.t 
+  
+  (* Data-type used for holding both the [group_info] and either a public
+				     or private key *)
+
+  val sign: ?rng : Random.rng -> string -> key -> string * string
+  
+  (* [sign ?rng msg key] returns the signature (r,s) of the message
+      [msg] computed using private key [key].  If [rng] is not
+      specified [sign] uses the GMP default PRNG to generate the
+      one time secret $k$. *)
+
+  val verify: string -> string * string -> key -> bool
+  
+  (* [verify msg signature key] verifies if [signature] is a valid
+      signature on message [msg] created with the private counterpart
+      of public key [key].  [verify] returns true if the signature is
+      valid, and false otherwise. *)
+
+  val new_key: ?rng: Random.rng -> ?grp_info: group_info -> ?num_bits: int -> string -> key * key
+
+  (* [new_key ?rng ?grp_info ?num_bits ?xseed] returns the generated keypair
+      [(public_key,private_key)].  If [rng] is not specified, [new_key]
+      will use the GMP default PRNG to generate the long-term secret
+      $x$ as well as the public group information ([q],[p],[base]) if
+      [grp_info] is not supplied.  [num_bits] is the length of the prime
+      [p] in bits.  If it is not supplied, it will default to the FIPS
+      186-2 specified value of 1024.  [xseed] is an additional
+      seed value for the PRNG if additional seeding is not
+      desired pass the empty string as [xseed]. *)
+
 end
+

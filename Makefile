@@ -9,5 +9,8 @@ clean:
 test:
 	cd src && $(MAKE) test
 
-run: all
-	./src/_build/main.byte
+run-server: all
+	./src/_build/nigori_server.byte
+
+run-client: all
+	./src/_build/nigori_client.byte
