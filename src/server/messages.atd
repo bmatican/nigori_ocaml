@@ -1,0 +1,8 @@
+type app = {
+    name: string;
+    url: url;
+} <ocaml field_prefix="app_">
+
+type url = {
+  path: string;
+} <ocaml field_prefix="url_">

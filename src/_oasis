@@ -8,14 +8,14 @@ BuildTools:  ocamlbuild
 
 # Libraries 
 Library crypto
-  Modules:            Constants, Primitives, Derivations, Messages
+  Modules:            Constants, Primitives, Derivations
   BuildDepends:       cryptokit, gmp
   Path:               crypto/
   Install:            false
 
 Library server
-  Modules:            Revision, Nonce
-  BuildDepends:       crypto, cohttp, unix
+  Modules:            Revision, Nonce, Messages, Messages_t, Messages_j
+  BuildDepends:       crypto, cohttp, unix, atdgen, yojson
   Path:               server/
   Install:            false
 

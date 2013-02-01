@@ -1,4 +1,4 @@
-.PHONY: all clean test
+.PHONY: all clean test run-server run-client
 
 all:
 	cd src && $(MAKE)
