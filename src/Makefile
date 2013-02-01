@@ -13,11 +13,10 @@ test: oasis, server
 
 oasis: $(OASIS_FILE)
 	oasis setup
-	make clean
 
 server: 
 	cd server/ && $(MAKE)
 
 clean:
 	ocamlbuild -clean
-	cd server && $(MAKE) clean
+	cd server/ && $(MAKE) clean

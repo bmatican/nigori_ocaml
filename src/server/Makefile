@@ -1,4 +1,4 @@
-MESSAGES=mess
+MESSAGES=messages
 MESSAGES_ATD=$(MESSAGES).atd
 
 .PHONY: all clean $(MESSAGES)
