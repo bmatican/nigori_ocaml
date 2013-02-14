@@ -8,20 +8,55 @@ BuildTools:  ocamlbuild
 
 # Libraries 
 Library crypto
-  Modules:            Constants, Primitives, Derivations
-  BuildDepends:       cryptokit, gmp
-  Path:               crypto/
+  Modules:            Constants, 
+                      Primitives, 
+                      Derivations
+  BuildDepends:       cryptokit, 
+                      gmp
+  Path:               common/crypto/
+  Install:            false
+
+Library common
+  Modules:            Revision,
+                      Nonce,
+                      Messages,
+                      Messages_t,
+                      Messages_j
+  BuildDepends:       crypto,
+                      atdgen, 
+                      yojson,
+                      cohttp
+  Path:               common/
+  Install:            false
+
+Library client 
+  Modules:            Client_unix
+  BuildDepends:       common,
+                      crypto,
+                      lwt.unix,
+                      lwt, 
+                      lwt.syntax, 
+                      cohttp, 
+                      cohttp.lwt
+  Path:               client/
   Install:            false
 
 Library server
-  Modules:            Revision, Nonce, Messages, Messages_t, Messages_j
-  BuildDepends:       crypto, cohttp, unix, atdgen, yojson
+  Modules:            Server_unix
+  BuildDepends:       common, 
+                      crypto,
+                      lwt.unix,
+                      lwt, 
+                      lwt.syntax, 
+                      cohttp, 
+                      cohttp.lwt
   Path:               server/
   Install:            false
 
 Library test
   Modules:            Common
-  BuildDepends:       crypto
+  BuildDepends:       common,
+                      crypto
   Path:               test/
   Install:            false
 
@@ -29,14 +64,26 @@ Library test
 Executable nigori_server
   Path:               .
   MainIs:             nigori_server.ml
-  BuildDepends:       crypto, server
+  BuildDepends:       common, 
+                      crypto,
+                      server
+  Install:            false
+ 
+Executable nigori_client
+  Path:               .
+  MainIs:             nigori_client.ml
+  BuildDepends:       common, 
+                      crypto,
+                      client
   Install:            false
  
 # Tests
 Executable test_primitives
   Path:               test/
   MainIs:             test_primitives.ml
-  BuildDepends:       oUnit, crypto, test
+  BuildDepends:       crypto, 
+                      test,
+                      oUnit 
   Install:            false
 
 Test test_primitives
@@ -46,7 +93,9 @@ Test test_primitives
 Executable test_utils
   Path:               test/
   MainIs:             test_utils.ml
-  BuildDepends:       oUnit, crypto, test
+  BuildDepends:       crypto, 
+                      test,
+                      oUnit
   Install:            false
 
 Test test_utils

@@ -1,0 +1,58 @@
+type authenticate_request = {
+  public_key : string;
+  sig : string;
+  nonce : string;
+  server_name : string;
+} <ocaml field_prefix="auth_request_">
+
+type register_request = {
+  public_key : string;
+  token : string;
+} <ocaml field_prefix="register_request_">
+
+type unregister_request = {
+  auth : authenticate_request;  
+} <ocaml field_prefix="unregister_request_">
+
+type revision_value = {
+  revision : string;
+  value : string;
+} <ocaml field_prefix="revval_">
+
+type get_request = {
+  auth : authenticate_request;
+  key : string;
+  ?revision : string option;
+} <ocaml field_prefix="get_request_">
+
+type get_response = {
+  revisions : revision_value list;
+  ?key : string option;
+} <ocaml field_prefix="get_response_">
+
+type get_indices_request = {
+  auth : authenticate_request; 
+} <ocaml field_prefix="get_indices_">
+
+type get_revisions_request = {
+  auth : authenticate_request;
+  key : string;
+} <ocaml field_prefix="get_revisions_request_">
+
+type get_revisions_response = {
+  revisions : revision_value list;
+  ?key : string option;
+} <ocaml field_prefix="get_revisions_response_">
+
+type put_request = {
+  auth : authenticate_request;
+  key : string;
+  revision : string;
+  value : string;
+} <ocaml field_prefix="put_request_">
+
+type delete_request = {
+  auth : authenticate_request;
+  key : string;
+  ?revision : string option;
+} <ocaml field_prefix="delete_request_">
