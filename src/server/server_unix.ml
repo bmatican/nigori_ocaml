@@ -24,13 +24,40 @@ let make_server () =
   let callback conn_id ?body req =
     lwt lwt_body = Body.string_of_body body in
     match Request.path req with
-    | "" | "/" -> 
-      Server.respond_string ~status:`OK ~body:"helloworld" ()
-    | "/post" -> 
-        Printf.eprintf "Got a POST request\n";
+      | "/get" -> not_found ()
+      | "/get-indices" -> not_found ()
+      | "/get-revisions" -> not_found ()
+      | "/put" -> not_found ()
+      | "/delete" -> not_found ()
+      | "/update" -> not_found ()
+      | "/authenticate" -> begin
         let f () = Server.respond_string ~status:`OK ~body:lwt_body () in
         validate_post req f
-    | _ -> not_found ()
+      end
+      | "/register" -> not_found ()
+      | "/unregister" -> not_found ()
+      | _ -> not_found ()
+    (*
+    let endpoint = Endpoint.from (Request.path req) in
+    Printf.eprintf "Got endpoint: %s\n" (Request.path req);
+    match endpoint with
+    | None -> not_found ()
+    | Some path -> begin match path with
+      | `get -> not_found()
+      | `get_indices -> not_found ()
+      | `get_revisions -> not_found ()
+      | `put -> not_found ()
+      | `delete -> not_found ()
+      | `update -> not_found ()
+      | `authenticate -> begin
+          let f () = Server.respond_string ~status:`OK ~body:lwt_body () in
+          validate_post req f
+      end
+      | `register -> not_found ()
+      | `unregister -> not_found ()
+      | _ -> not_found ()
+    end
+    *)
   in
   let conn_closed conn_id () =
     Printf.eprintf "conn %s closed\n%!" (Server.string_of_conn_id conn_id)

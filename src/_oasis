@@ -42,9 +42,10 @@ Library client
   Install:            false
 
 Library server
-  Modules:            Server_unix,
+  Modules:            Endpoint,
                       User,
-                      Database
+                      Database,
+                      Server_unix
   BuildDepends:       common, 
                       crypto,
                       lwt.unix,
@@ -103,3 +104,15 @@ Executable test_utils
 Test test_utils
   Run:                true
   Command:            $test_utils
+
+Executable test_database
+  Path:               test/
+  MainIs:             test_database.ml
+  BuildDepends:       test,
+                      oUnit,
+                      server
+  Install:            false
+
+Test test_database
+  Run:                true
+  Command:            $test_database

@@ -1,4 +1,7 @@
-val local_assert_equal : string -> string -> unit
+val local_assert_equal : ?msg:string -> string -> string -> unit
+
+val assert_true : bool -> string -> unit
+val assert_false : bool -> string -> unit
 
 val test_function : 'a list -> ('a -> string * string) -> unit
 
