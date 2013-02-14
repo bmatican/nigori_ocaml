@@ -2,6 +2,11 @@ _build
 myocamlbuild.ml
 setup.*
 
+*_t.ml
+*_t.mli
+*_j.ml
+*_j.mli
+
 # added recently...not sure how to make it get cleaned by itself..
 # probably shouldn't :p
 *.mllib

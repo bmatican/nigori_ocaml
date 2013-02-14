@@ -17,3 +17,6 @@ let create_random () =
   let rand = random_int () in
   let time = int_of_float (Unix.gettimeofday ()) in
   create_exact time rand
+
+(*TODO*)
+let is_recent nonce = false

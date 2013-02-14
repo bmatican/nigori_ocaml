@@ -42,7 +42,9 @@ Library client
   Install:            false
 
 Library server
-  Modules:            Server_unix
+  Modules:            Server_unix,
+                      User,
+                      Database
   BuildDepends:       common, 
                       crypto,
                       lwt.unix,
