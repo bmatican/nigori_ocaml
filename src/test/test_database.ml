@@ -208,8 +208,6 @@ let test_records () =
       assert_false ret "Deleted record again"
     ) in
     List.iter f input
-
-    (* TODO: add nonce testing! *)
   end
 
 (* Test fixtures combined. *)

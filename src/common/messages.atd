@@ -40,7 +40,7 @@ type get_revisions_request = {
 } <ocaml field_prefix="get_revisions_request_">
 
 type get_revisions_response = {
-  revisions : revision_value list;
+  revisions : string list;
   ?key : string option;
 } <ocaml field_prefix="get_revisions_response_">
 

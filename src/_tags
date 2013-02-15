@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 7c9a468416da9d7a8ea1b89bb9e83a54)
+# DO NOT EDIT (digest: de9c55ee2b2800683b3a059a0d9679a5)
 # Ignore VCS directories, you can use the same kind of rule outside 
 # OASIS_START/STOP if you want to exclude directories that contains 
 # useless stuff for the build process
@@ -13,22 +13,22 @@
 ".git": not_hygienic
 "_darcs": -traverse
 "_darcs": not_hygienic
-# Library crypto
-"common/crypto/crypto.cmxs": use_crypto
+# Library lib_crypto
+"common/crypto/lib_crypto.cmxs": use_lib_crypto
 <common/crypto/*.ml{,i}>: pkg_cryptokit
 <common/crypto/*.ml{,i}>: pkg_gmp
-# Library common
-"common/common.cmxs": use_common
-<common/*.ml{,i}>: use_crypto
+# Library lib_common
+"common/lib_common.cmxs": use_lib_common
+<common/*.ml{,i}>: use_lib_crypto
 <common/*.ml{,i}>: pkg_cohttp
 <common/*.ml{,i}>: pkg_atdgen
 <common/*.ml{,i}>: pkg_yojson
 <common/*.ml{,i}>: pkg_cryptokit
 <common/*.ml{,i}>: pkg_gmp
-# Library client
-"client/client.cmxs": use_client
-<client/*.ml{,i}>: use_common
-<client/*.ml{,i}>: use_crypto
+# Library lib_client
+"client/lib_client.cmxs": use_lib_client
+<client/*.ml{,i}>: use_lib_common
+<client/*.ml{,i}>: use_lib_crypto
 <client/*.ml{,i}>: pkg_lwt.unix
 <client/*.ml{,i}>: pkg_lwt
 <client/*.ml{,i}>: pkg_lwt.syntax
@@ -38,10 +38,10 @@
 <client/*.ml{,i}>: pkg_yojson
 <client/*.ml{,i}>: pkg_cryptokit
 <client/*.ml{,i}>: pkg_gmp
-# Library server
-"server/server.cmxs": use_server
-<server/*.ml{,i}>: use_common
-<server/*.ml{,i}>: use_crypto
+# Library lib_server
+"server/lib_server.cmxs": use_lib_server
+<server/*.ml{,i}>: use_lib_common
+<server/*.ml{,i}>: use_lib_crypto
 <server/*.ml{,i}>: pkg_lwt.unix
 <server/*.ml{,i}>: pkg_lwt
 <server/*.ml{,i}>: pkg_lwt.syntax
@@ -51,38 +51,38 @@
 <server/*.ml{,i}>: pkg_yojson
 <server/*.ml{,i}>: pkg_cryptokit
 <server/*.ml{,i}>: pkg_gmp
-# Library test
-"test/test.cmxs": use_test
-# Executable nigori_server
-"nigori_server.byte": use_server
-"nigori_server.byte": use_common
-"nigori_server.byte": use_crypto
-"nigori_server.byte": pkg_lwt.unix
-"nigori_server.byte": pkg_lwt
-"nigori_server.byte": pkg_lwt.syntax
-"nigori_server.byte": pkg_cohttp
-"nigori_server.byte": pkg_cohttp.lwt
-"nigori_server.byte": pkg_atdgen
-"nigori_server.byte": pkg_yojson
-"nigori_server.byte": pkg_cryptokit
-"nigori_server.byte": pkg_gmp
-<*.ml{,i}>: use_server
-# Executable nigori_client
-"nigori_client.byte": use_client
-"nigori_client.byte": use_common
-"nigori_client.byte": use_crypto
-"nigori_client.byte": pkg_lwt.unix
-"nigori_client.byte": pkg_lwt
-"nigori_client.byte": pkg_lwt.syntax
-"nigori_client.byte": pkg_cohttp
-"nigori_client.byte": pkg_cohttp.lwt
-"nigori_client.byte": pkg_atdgen
-"nigori_client.byte": pkg_yojson
-"nigori_client.byte": pkg_cryptokit
-"nigori_client.byte": pkg_gmp
-<*.ml{,i}>: use_client
-<*.ml{,i}>: use_common
-<*.ml{,i}>: use_crypto
+# Library lib_test
+"test/lib_test.cmxs": use_lib_test
+# Executable server_nigori
+"server_nigori.byte": use_lib_server
+"server_nigori.byte": use_lib_common
+"server_nigori.byte": use_lib_crypto
+"server_nigori.byte": pkg_lwt.unix
+"server_nigori.byte": pkg_lwt
+"server_nigori.byte": pkg_lwt.syntax
+"server_nigori.byte": pkg_cohttp
+"server_nigori.byte": pkg_cohttp.lwt
+"server_nigori.byte": pkg_atdgen
+"server_nigori.byte": pkg_yojson
+"server_nigori.byte": pkg_cryptokit
+"server_nigori.byte": pkg_gmp
+<*.ml{,i}>: use_lib_server
+# Executable client_nigori
+"client_nigori.byte": use_lib_client
+"client_nigori.byte": use_lib_common
+"client_nigori.byte": use_lib_crypto
+"client_nigori.byte": pkg_lwt.unix
+"client_nigori.byte": pkg_lwt
+"client_nigori.byte": pkg_lwt.syntax
+"client_nigori.byte": pkg_cohttp
+"client_nigori.byte": pkg_cohttp.lwt
+"client_nigori.byte": pkg_atdgen
+"client_nigori.byte": pkg_yojson
+"client_nigori.byte": pkg_cryptokit
+"client_nigori.byte": pkg_gmp
+<*.ml{,i}>: use_lib_client
+<*.ml{,i}>: use_lib_common
+<*.ml{,i}>: use_lib_crypto
 <*.ml{,i}>: pkg_lwt.unix
 <*.ml{,i}>: pkg_lwt
 <*.ml{,i}>: pkg_lwt.syntax
@@ -93,9 +93,9 @@
 <*.ml{,i}>: pkg_cryptokit
 <*.ml{,i}>: pkg_gmp
 # Executable test_primitives
-"test/test_primitives.byte": use_test
-"test/test_primitives.byte": use_common
-"test/test_primitives.byte": use_crypto
+"test/test_primitives.byte": use_lib_test
+"test/test_primitives.byte": use_lib_common
+"test/test_primitives.byte": use_lib_crypto
 "test/test_primitives.byte": pkg_oUnit
 "test/test_primitives.byte": pkg_cohttp
 "test/test_primitives.byte": pkg_atdgen
@@ -103,9 +103,9 @@
 "test/test_primitives.byte": pkg_cryptokit
 "test/test_primitives.byte": pkg_gmp
 # Executable test_utils
-"test/test_utils.byte": use_test
-"test/test_utils.byte": use_common
-"test/test_utils.byte": use_crypto
+"test/test_utils.byte": use_lib_test
+"test/test_utils.byte": use_lib_common
+"test/test_utils.byte": use_lib_crypto
 "test/test_utils.byte": pkg_oUnit
 "test/test_utils.byte": pkg_cohttp
 "test/test_utils.byte": pkg_atdgen
@@ -113,10 +113,10 @@
 "test/test_utils.byte": pkg_cryptokit
 "test/test_utils.byte": pkg_gmp
 # Executable test_database
-"test/test_database.byte": use_test
-"test/test_database.byte": use_server
-"test/test_database.byte": use_common
-"test/test_database.byte": use_crypto
+"test/test_database.byte": use_lib_test
+"test/test_database.byte": use_lib_server
+"test/test_database.byte": use_lib_common
+"test/test_database.byte": use_lib_crypto
 "test/test_database.byte": pkg_oUnit
 "test/test_database.byte": pkg_lwt.unix
 "test/test_database.byte": pkg_lwt
@@ -127,10 +127,10 @@
 "test/test_database.byte": pkg_yojson
 "test/test_database.byte": pkg_cryptokit
 "test/test_database.byte": pkg_gmp
-<test/*.ml{,i}>: use_test
-<test/*.ml{,i}>: use_server
-<test/*.ml{,i}>: use_common
-<test/*.ml{,i}>: use_crypto
+<test/*.ml{,i}>: use_lib_test
+<test/*.ml{,i}>: use_lib_server
+<test/*.ml{,i}>: use_lib_common
+<test/*.ml{,i}>: use_lib_crypto
 <test/*.ml{,i}>: pkg_oUnit
 <test/*.ml{,i}>: pkg_lwt.unix
 <test/*.ml{,i}>: pkg_lwt

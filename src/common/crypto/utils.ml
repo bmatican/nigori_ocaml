@@ -104,3 +104,5 @@ let rec decode_length s =
       then [message]
       else message :: (decode_length (String.sub s offset rest))
     with exn -> raise InvalidEncodingLength
+
+let hash_key key = key

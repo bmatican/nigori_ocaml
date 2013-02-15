@@ -7,7 +7,7 @@ License:     Apache
 BuildTools:  ocamlbuild
 
 # Libraries 
-Library crypto
+Library lib_crypto
   Modules:            Constants, 
                       Primitives, 
                       Derivations
@@ -16,23 +16,24 @@ Library crypto
   Path:               common/crypto/
   Install:            false
 
-Library common
-  Modules:            Revision,
+Library lib_common
+  Modules:            Config,
+                      Revision,
                       Nonce,
                       Messages,
                       Messages_t,
                       Messages_j
-  BuildDepends:       crypto,
+  BuildDepends:       lib_crypto,
                       atdgen, 
                       yojson,
                       cohttp
   Path:               common/
   Install:            false
 
-Library client 
+Library lib_client
   Modules:            Client_unix
-  BuildDepends:       common,
-                      crypto,
+  BuildDepends:       lib_common,
+                      lib_crypto,
                       lwt.unix,
                       lwt, 
                       lwt.syntax, 
@@ -41,13 +42,13 @@ Library client
   Path:               client/
   Install:            false
 
-Library server
-  Modules:            Endpoint,
-                      User,
+Library lib_server
+  Modules:            User,
                       Database,
+                      Handler,
                       Server_unix
-  BuildDepends:       common, 
-                      crypto,
+  BuildDepends:       lib_common,
+                      lib_crypto,
                       lwt.unix,
                       lwt, 
                       lwt.syntax, 
@@ -56,36 +57,36 @@ Library server
   Path:               server/
   Install:            false
 
-Library test
+Library lib_test
   Modules:            Common
-  BuildDepends:       common,
-                      crypto
+  BuildDepends:       lib_common,
+                      lib_crypto
   Path:               test/
   Install:            false
 
 # Main executable
-Executable nigori_server
+Executable server_nigori
   Path:               .
-  MainIs:             nigori_server.ml
-  BuildDepends:       common, 
-                      crypto,
-                      server
+  MainIs:             server_nigori.ml
+  BuildDepends:       lib_common, 
+                      lib_crypto,
+                      lib_server
   Install:            false
  
-Executable nigori_client
+Executable client_nigori
   Path:               .
-  MainIs:             nigori_client.ml
-  BuildDepends:       common, 
-                      crypto,
-                      client
+  MainIs:             client_nigori.ml
+  BuildDepends:       lib_common,
+                      lib_crypto,
+                      lib_client
   Install:            false
  
 # Tests
 Executable test_primitives
   Path:               test/
   MainIs:             test_primitives.ml
-  BuildDepends:       crypto, 
-                      test,
+  BuildDepends:       lib_crypto,
+                      lib_test,
                       oUnit 
   Install:            false
 
@@ -96,8 +97,8 @@ Test test_primitives
 Executable test_utils
   Path:               test/
   MainIs:             test_utils.ml
-  BuildDepends:       crypto, 
-                      test,
+  BuildDepends:       lib_crypto, 
+                      lib_test,
                       oUnit
   Install:            false
 
@@ -108,9 +109,9 @@ Test test_utils
 Executable test_database
   Path:               test/
   MainIs:             test_database.ml
-  BuildDepends:       test,
+  BuildDepends:       lib_test,
                       oUnit,
-                      server
+                      lib_server
   Install:            false
 
 Test test_database
