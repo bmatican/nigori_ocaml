@@ -32,7 +32,11 @@ type get_response = {
 
 type get_indices_request = {
   auth : authenticate_request; 
-} <ocaml field_prefix="get_indices_">
+} <ocaml field_prefix="get_indices_request_">
+
+type get_indices_response = {
+  indices : string list;
+} <ocaml field_prefix="get_indices_response_">
 
 type get_revisions_request = {
   auth : authenticate_request;

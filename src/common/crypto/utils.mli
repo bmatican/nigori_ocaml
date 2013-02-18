@@ -3,6 +3,9 @@ exception InvalidEncodingLength
 
 val to_hex : string -> string
 
+val bin2int : string -> int
+val int2bin : int -> string
+
 val four_octet_encode : int -> string
 val four_octet_decode : string -> int
 

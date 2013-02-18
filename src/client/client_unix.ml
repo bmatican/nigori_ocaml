@@ -1,4 +1,5 @@
 open Lwt
+open Cohttp
 open Cohttp_lwt_unix
 
 open Messages_j
@@ -23,13 +24,22 @@ let print_response t = match_lwt t with
 let post message endpoint = 
   print_response (Client.post ?body:(Body.body_of_string message) (url endpoint))
 
-let pub_key = "public_key"
+let make_signature () = 
+  let key = ["some";"sig"] in
+  Base64.encode (Utils.encode_length key)
+
+let make_nonce () = 
+  let nonce = Nonce.create_random () in
+  (* Printf.eprintf "Made nonce %d %d\n" (Nonce.get_random nonce) (Nonce.get_time nonce); *)
+  Base64.encode (Nonce.to_string nonce)
+
+let pub_key = "pub_key_hash"
 
 let make_auth_request () = 
   {
     auth_request_public_key = pub_key;
-    auth_request_sig = "sig";
-    auth_request_nonce = "nonce";
+    auth_request_sig = make_signature ();
+    auth_request_nonce = make_nonce ();
     auth_request_server_name = "server_name";
   }
 

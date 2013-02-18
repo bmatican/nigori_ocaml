@@ -117,3 +117,15 @@ Executable test_database
 Test test_database
   Run:                true
   Command:            $test_database
+
+Executable test_nonce
+  Path:               test/
+  MainIs:             test_nonce.ml
+  BuildDepends:       lib_test,
+                      oUnit,
+                      lib_server
+  Install:            false
+
+Test test_nonce
+  Run:                true
+  Command:            $test_nonce

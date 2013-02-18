@@ -10,12 +10,16 @@ let offset_future = 60 * 60
 let random_size = 4 (* INT SIZE *)
 let int_size = 4
 
+let _ = Random.self_init ()
 let random_int () = 
+  Random.bits ()
+  (*
   let rand = Primitives.Random.generate random_size in
-  (Utils.four_octet_decode rand)
+  (Utils.bin2int rand)
+  *)
 
 let now () = 
-  (int_of_float (Unix.gettimeofday ())) / 1000
+  int_of_float (Unix.gettimeofday ())
 
 let create_exact since_epoch random = 
   {
@@ -32,18 +36,24 @@ let create_random () =
   let since_epoch = now () in
   create_exact since_epoch random
 
+let get_time nonce = nonce.since_epoch
+let get_nt nonce = Utils.int2bin nonce.since_epoch
+
+let get_random nonce = nonce.random
+let get_nr nonce = Utils.int2bin nonce.random
+
 let from_string str =
   if String.length str != random_size + int_size
   then raise InvalidLengthException
   else
-    let random = int_of_string (String.sub str 0 random_size) in
-    let since_epoch = int_of_string (String.sub str random_size int_size) in
+    let random = Utils.bin2int (String.sub str 0 random_size) in
+    let since_epoch = Utils.bin2int (String.sub str random_size int_size) in
     create_exact since_epoch random
 
 let to_string nonce =
-  let random = nonce.random in
-  let since_epoch = nonce.since_epoch in
-  (Utils.four_octet_encode random) ^ (Utils.four_octet_encode since_epoch)
+  let random = Utils.int2bin nonce.random in
+  let since_epoch = Utils.int2bin nonce.since_epoch in
+  random ^ since_epoch
 
 let is_recent nonce =
   let current = now () in

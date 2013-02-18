@@ -123,7 +123,7 @@ let test_records () =
 
     let indices2 = [rv21; rv22;] in
     let f = (fun el ->
-      let some_record = get_record db user key1 in
+      let some_record = get_record db user key1 () in
       match some_record with
       | None -> assert_string "Could not get record for valid user"
       | Some record -> begin
@@ -132,7 +132,7 @@ let test_records () =
     ) in
     List.iter f [indices1; indices2;];
     
-    let other_record = get_record db other_user key1 in
+    let other_record = get_record db other_user key1 () in
     match other_record with
     | None -> ()
     | Some record -> begin
@@ -144,11 +144,11 @@ let test_records () =
       let rv = snd el in
       let key = List.nth input 0 in
       let rev = List.nth input 1 in
-      let some_rv = get_revision db user key rev in
+      let some_rv = get_record db user key ~revision:(Some (rev)) () in
       match some_rv with
       | None -> assert_string "Could not get data for valid user, key and rev"
       | Some test_rv -> begin
-        assert_true (test_rv == rv ) "Invalid data"
+        assert_true (test_rv == [rv] ) "Invalid data"
       end
     ) in
     let test = [
@@ -159,21 +159,21 @@ let test_records () =
     ] in
     List.iter f test;
 
-    let other_data = get_revision db other_user key1 rev1 in
+    let other_data = get_record db other_user key1 ~revision:(Some (rev1)) () in
     match other_data with
     | None -> ()
     | Some data -> begin
       assert_string "Got data for invalid user"
     end;
 
-    let other_data = get_revision db user other_key rev1 in
+    let other_data = get_record db user other_key ~revision:(Some (rev1)) () in
     match other_data with
     | None -> ()
     | Some data -> begin
       assert_string "Got data for invalid key"
     end;
 
-    let other_data = get_revision db user key1 other_rev in
+    let other_data = get_record db user key1 ~revision:(Some (other_rev)) () in
     match other_data with
     | None -> ()
     | Some data -> begin
@@ -198,13 +198,13 @@ let test_records () =
 
     let input = [key1;key2;] in
     let f = (fun key ->
-      let ret = delete_record db user key in
+      let ret = delete_record db user key ~revision:None () in
       assert_true ret "Could not delete record"
     ) in
     List.iter f input;
 
     let f = (fun key ->
-      let ret = delete_record db user key in
+      let ret = delete_record db user key ~revision:None () in
       assert_false ret "Deleted record again"
     ) in
     List.iter f input

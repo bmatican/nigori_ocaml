@@ -64,6 +64,16 @@ let test_encode_decode_length () =
     ) in
   test_function tests f
 
+(* Testing bin2int and int2bin functions. *)
+let test_conversion () =
+  Random.self_init ();
+  for i = 0 to 100 do
+    let test = Random.bits () in
+    let str = Utils.int2bin test in
+    let nr = Utils.bin2int str in
+    assert_true (test == nr) "Conversion failed"
+  done
+
 let test_fixtures = 
   let name = "Utils" in
   let tests = [
@@ -71,6 +81,7 @@ let test_fixtures =
     ("encode_length", test_encode_length);
     ("decode_length", test_decode_length);
     ("encode_decode_length", test_encode_decode_length);
+    ("conversion", test_conversion);
   ] in
   make_fixtures name tests
 

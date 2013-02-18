@@ -1,10 +1,31 @@
-let to_hex message = Cryptokit.(transform_string (Hexa.encode ()) message)
-
 exception InvalidListLength
 exception InvalidEncodingLength
 exception InvalidHashLength
 
+let to_hex message = Cryptokit.(transform_string (Hexa.encode ()) message)
+
 let octet_size = 8
+
+let bin2int str = 
+  if String.length str != 4
+  then raise InvalidEncodingLength
+  else begin
+    let mask = (1 lsl octet_size) - 1 in
+    let p1 = (int_of_char str.[0]) land mask in
+    let p2 = (int_of_char str.[1]) land mask in
+    let p3 = (int_of_char str.[2]) land mask in
+    let p4 = (int_of_char str.[3]) land mask in
+    (p1 lsl 24) + (p2 lsl 16) + (p3 lsl 8) + (p4)
+  end
+
+let int2bin nr =
+  let mask = (1 lsl octet_size) -1 in
+  let str = String.create 4 in
+  str.[0] <- char_of_int ((nr lsr 24) land mask);
+  str.[1] <- char_of_int ((nr lsr 16) land mask);
+  str.[2] <- char_of_int ((nr lsr 8) land mask);
+  str.[3] <- char_of_int (nr land mask);
+  str
 
 let take_first l n = 
   let rec take_first_helper l n = 

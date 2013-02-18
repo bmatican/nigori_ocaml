@@ -4,18 +4,24 @@ let default_revisions_size = 10
 let default_store_size = 100
 let default_stores_size = 10
 let default_users_size = 10
-let default_nonces_size = 100
+let default_nonce_size = 100
+let default_nonces_size = default_users_size
 
 type map_revisions = (string, string) Hashtbl.t
 type map_store = (string, map_revisions) Hashtbl.t
 type map_stores = (User.t, map_store) Hashtbl.t
+
 type map_users = (User.hash, User.t) Hashtbl.t
-type map_nonces = (User.public_key, Nonce.t list) Hashtbl.t
+
+(* TODO: Ocaml doesn't seem to have O(1) Sets. *)
+type map_nonce = (Nonce.t, bool) Hashtbl.t
+type map_nonces = (User.public_key, map_nonce) Hashtbl.t
 
 let make_map_revisions () = Hashtbl.create default_revisions_size
 let make_store () = Hashtbl.create default_store_size
 let make_stores () = Hashtbl.create default_stores_size
 let make_users () = Hashtbl.create default_users_size
+let make_nonce () = Hashtbl.create default_nonce_size
 let make_nonces () = Hashtbl.create default_nonces_size
 
 type t = {
@@ -101,7 +107,7 @@ let get_indices store user =
   end
 
 
-let get_record store user key =
+let get_record store user key ?(revision=None) () =
   let hash = User.get_hash user in
   if not (have_user store hash)
   then None
@@ -111,41 +117,32 @@ let get_record store user key =
     then None
     else begin
       let revs = Hashtbl.find s key in
-      let f = ( fun k v l ->
-        let rv = {
-          revval_revision = k;
-          revval_value = v;
-        } in
-        rv :: l
-      ) in
-      Some (Hashtbl.fold f revs [])
-    end
-  end
-
-
-let get_revision store user key revision = 
-  let hash = User.get_hash user in
-  if not (have_user store hash)
-  then None
-  else begin
-    let s = Hashtbl.find store.stores user in
-    if not (Hashtbl.mem s key)
-    then None
-    else begin
-      let revs = Hashtbl.find s key in
-      if not (Hashtbl.mem revs revision)
-      then None
-      else begin
-        let value = Hashtbl.find revs revision in
-        let rv = {
-          revval_revision = revision;
-          revval_value = value;
-        } in
-        Some (rv)
+      match revision with
+      | None -> begin
+        let f = ( fun k v l ->
+          let rv = {
+            revval_revision = k;
+            revval_value = v;
+          } in
+          rv :: l
+        ) in
+        Some (Hashtbl.fold f revs [])
+      end
+      | Some rev -> begin
+        if not (Hashtbl.mem revs rev)
+        then None
+        else begin
+          let value = Hashtbl.find revs rev in
+          let rv = {
+            revval_revision = rev;
+            revval_value = value;
+          } in
+          Some ([rv])
+        end
       end
     end
   end
-  
+
 
 let get_revisions store user key =
   let hash = User.get_hash user in
@@ -190,7 +187,7 @@ let put_record store user key revision data =
   end
 
 
-let delete_record store user key =
+let delete_record store user key ?(revision=None) () =
   let hash = User.get_hash user in
   if not (have_user store hash)
   then false
@@ -199,35 +196,50 @@ let delete_record store user key =
     if not (Hashtbl.mem s key)
     then false
     else begin
-      Hashtbl.remove s key;
-      true
+      match revision with
+      | None -> begin
+        Hashtbl.remove s key;
+        true
+      end
+      | Some rev -> begin
+        let revs = Hashtbl.find s key in
+        if not (Hashtbl.mem revs rev)
+        then false
+        else begin
+          Hashtbl.remove revs rev;
+          true
+        end
+      end
     end
   end
 
 let check_and_add_nonce store nonce pub_key =
-  if Nonce.is_recent nonce
+  if not (Nonce.is_recent nonce)
   then false
   else begin
     if not (Hashtbl.mem store.nonces pub_key)
     then begin
-      Hashtbl.replace store.nonces pub_key [nonce];
+      let nonce_store = make_nonce () in
+      Hashtbl.replace store.nonces pub_key nonce_store;
       true
     end
     else begin
       let nonces = Hashtbl.find store.nonces pub_key in
-      Hashtbl.replace store.nonces pub_key (nonce :: nonces);
-      true
+      if Hashtbl.mem nonces nonce
+      then false
+      else begin
+        Hashtbl.replace nonces nonce true;
+        true
+      end
     end
   end
 
 let clear_old_nonces store =
-  let clear = (fun acc el ->
-    if Nonce.is_recent el
-    then acc
-    else el :: acc
-  ) in
-  let f = (fun k v ->
-    let recent = List.fold_left clear [] v in
-    Hashtbl.replace store.nonces k recent
-  ) in
-  Hashtbl.iter f store.nonces
+  let clear_all = (fun hash nonces -> begin
+    let clear = (fun nonce boolean -> begin
+      if Nonce.is_recent nonce
+      then Hashtbl.remove nonces nonce
+    end) in
+    Hashtbl.iter clear nonces
+  end) in
+  Hashtbl.iter clear_all store.nonces

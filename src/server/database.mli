@@ -12,9 +12,8 @@ val check_and_add_nonce : t -> Nonce.t -> User.public_key -> bool
 val clear_old_nonces : t -> unit
 
 val get_indices : t -> User.t -> string list option
-val get_record : t -> User.t -> string -> Messages_t.revision_value list option
-val get_revision : t -> User.t -> string -> string -> Messages_t.revision_value option
+val get_record : t -> User.t -> string -> ?revision:string option -> unit -> Messages_t.revision_value list option
 val get_revisions : t -> User.t -> string -> string list option
 
 val put_record : t -> User.t -> string -> string -> string -> bool
-val delete_record : t -> User.t -> string -> bool
+val delete_record : t -> User.t -> string -> ?revision:string option -> unit -> bool
