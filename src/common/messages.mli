@@ -73,5 +73,6 @@ val decode_register_request: register_request -> register_request
 
 
 val make_unregister_request: DSA.key * DSA.key -> string -> unregister_request
+val to_sign_unregister_request: unregister_request -> string
 val encode_unregister_request: unregister_request -> unregister_request
 val decode_unregister_request: unregister_request -> unregister_request

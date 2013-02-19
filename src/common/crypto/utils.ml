@@ -8,7 +8,10 @@ let octet_size = 8
 
 let bin2int str = 
   if String.length str != 4
-  then raise InvalidEncodingLength
+  then begin
+    Printf.eprintf "Failed bin2int\n";
+    raise InvalidEncodingLength
+  end
   else begin
     let mask = (1 lsl octet_size) - 1 in
     let p1 = (int_of_char str.[0]) land mask in
@@ -48,78 +51,55 @@ let rec split_by_octets nr pieces =
     let mask = size - 1 in
     split_by_octets (nr lsr octet_size) ((nr land mask) :: pieces)
 
-let four_octet_encode nr = 
-  let size = 4 in
-  let octets = split_by_octets nr [] in
-  let diff = size - (List.length octets) in
-  let first_four =
-    if diff > 0 
-    then pad_with_zeros octets diff
-    else take_first octets size in
-  let result = String.create size in
-  let set_result index nr =
-    String.set result index (char_of_int nr) in
-  List.iteri set_result first_four;
-  result
-
-let four_octet_decode s = 
-  let len = String.length s in
-  if len != 4
-  then raise InvalidEncodingLength
-  else
-    let result = ref 0 in
-    for i = 0 to 3 do
-      let c = String.get s i in
-      result := (!result lsl octet_size) + (int_of_char c)
-    done;
-    !result
-
-let xor_helper a b = 
-  if String.length a != String.length b
-  then raise InvalidHashLength
-  else
-    let result = String.copy a in
-    let iterator i c = 
-      let xor_int = (int_of_char result.[i]) lxor (int_of_char c) in
-      let xor_char = char_of_int xor_int in
-      String.set result i xor_char in
-    String.iteri iterator b;
-    result
-
-let xor l = match l with
+let xor l = 
+  let xor_helper a b = 
+    if String.length a != String.length b
+    then raise InvalidHashLength
+    else
+      let result = String.copy a in
+      let iterator i c = 
+        let xor_int = (int_of_char result.[i]) lxor (int_of_char c) in
+        let xor_char = char_of_int xor_int in
+        String.set result i xor_char in
+      String.iteri iterator b;
+      result
+  in
+  match l with
   | [] -> ""
   | [el] -> el
   | h :: t -> List.fold_left xor_helper h t
 
-let concat_helper a b = a ^ b
 
-let concat l = match l with 
+let concat l = 
+  let concat_helper a b = a ^ b in
+  match l with 
   | [] -> ""
   | [el] -> el
   | h :: t -> List.fold_left concat_helper h t
 
-let append_length element = 
-  let len = String.length element in
-  let len_s = four_octet_encode len in
-  len_s ^ element
+let encode_length l =
+  let append_length element = 
+    let len = String.length element in
+    let len_s = int2bin len in
+    len_s ^ element
+  in
+  String.concat "" (List.map append_length l)
 
-let concat_with_length_helper a b = (append_length a) ^ (append_length b)
-
-let encode_length l = match l with
-  | [] -> ""
-  | [el] -> append_length el
-  | h :: t -> List.fold_left concat_with_length_helper h t
+let int_size = 4
 
 let rec decode_length s = 
   let len = String.length s in
-  if len < 4
-  then raise InvalidEncodingLength
+  if len < int_size
+  then begin
+    Printf.eprintf "wtf\n";
+    raise InvalidEncodingLength
+  end
   else
-    let encoded_size = String.sub s 0 4 in
-    let size = four_octet_decode encoded_size in
+    let encoded_size = String.sub s 0 int_size in
+    let size = bin2int encoded_size in
     try
-      let message = String.sub s 4 size in
-      let offset = 4 + size in
+      let message = String.sub s int_size size in
+      let offset = int_size + size in
       let rest = len - offset in
       if rest == 0
       then [message]

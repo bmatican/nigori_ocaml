@@ -97,7 +97,7 @@ module PBKDF2 = struct
         then 
           Utils.concat [
             salt;
-            (Utils.four_octet_encode iterations);
+            (Utils.int2bin iterations);
           ]
         else List.hd result in 
       let message = HMAC.apply password u_partial in

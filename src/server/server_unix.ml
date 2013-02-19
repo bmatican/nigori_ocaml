@@ -13,8 +13,6 @@ let make_server () =
     let endpoint = Request.path req in
     let request_str = String.sub endpoint 1 ((String.length endpoint) - 1) in
     Printf.eprintf "Hit endpoint: %s\n" endpoint;
-    Printf.eprintf "Sizes %d %d\n" (String.length endpoint) (String.length
-    request_str);
     let handler = Handler.create db req body in
     (* TODO: understand why OCaml does not do match with variables... *)
     if request_str = request_get then Handler.get handler

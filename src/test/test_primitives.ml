@@ -88,6 +88,16 @@ let test_dsa () =
     ((string_of_bool true), (string_of_bool check)) in
   test_function valid_dsa f
 
+(* Test DSA serialization *)
+let test_dsa_serialization () =
+  let pub_key, priv_key = P.DSA.nigori_new_key () in
+  let f key =
+    let ser = P.DSA.serialize_key key in
+    let next = P.DSA.serialize_key (P.DSA.deserialize_key (P.DSA.serialize_key key)) in
+    (ser, next)
+  in
+  test_function [pub_key; priv_key;] f
+
 (* Test fixtures combined. *)
 let test_fixtures = 
   let name = "Primitives" in
@@ -97,6 +107,7 @@ let test_fixtures =
     ("pbkdf2", test_pbkdf2);
     ("aes256", test_aes256);
     ("dsa", test_dsa);
+    ("dsa_serialization", test_dsa_serialization);
   ] in
   make_fixtures name tests
 
