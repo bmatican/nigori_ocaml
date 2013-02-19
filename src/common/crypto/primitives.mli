@@ -57,15 +57,14 @@ module Enc : sig
   val to_string : t -> string
 end
 
-open Cryptokit
-
 module DSA : sig
+  open Cryptokit
 
   type group_info =
       { size : int;
-	p : Gmp.Z.t;
-	q : Gmp.Z.t;
-	base : Gmp.Z.t}
+  p : Gmp.Z.t;
+  q : Gmp.Z.t;
+  base : Gmp.Z.t}
 
   (* This data-type is used to hold information about the group that the
     signatures will be computed in.  [size] is the size of the prime [p] in
@@ -73,19 +72,19 @@ module DSA : sig
     the unique cyclic group of order [q] in $(\mathbb{Z}/\mathbb{Z}_p)^*$ *)
 
   type key = group_info * Gmp.Z.t 
-  
+
   (* Data-type used for holding both the [group_info] and either a public
-				     or private key *)
+             or private key *)
 
   val sign: ?rng : Random.rng -> string -> key -> string * string
-  
+
   (* [sign ?rng msg key] returns the signature (r,s) of the message
       [msg] computed using private key [key].  If [rng] is not
       specified [sign] uses the GMP default PRNG to generate the
       one time secret $k$. *)
 
   val verify: string -> string * string -> key -> bool
-  
+
   (* [verify msg signature key] verifies if [signature] is a valid
       signature on message [msg] created with the private counterpart
       of public key [key].  [verify] returns true if the signature is
@@ -103,4 +102,13 @@ module DSA : sig
       seed value for the PRNG if additional seeding is not
       desired pass the empty string as [xseed]. *)
 
+  (* TODO: NIGORI SPECIFIC *)
+  val make_group : int -> string -> string -> string -> group_info
+  val serialize_key: key -> string
+  val deserialize_key: string -> key
+  val hash_key : key -> string
+
+  val nigori_sign: string -> key -> string * string
+  val nigori_verify: string -> string * string -> key -> bool
+  val nigori_new_key: unit -> key * key
 end

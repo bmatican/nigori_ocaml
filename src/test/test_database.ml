@@ -4,11 +4,12 @@ open Common
 
 open Database
 open Messages_t
+open Primitives
 
-let pub = User.make_key "public_key"
-let hash = User.make_hash "some_hash"
-let other_hash = User.make_hash "other_hash"
-let other_pub = User.make_key "other_pub"
+let pub = fst (DSA.nigori_new_key ())
+let hash = User.make_hash (DSA.hash_key pub)
+let other_pub = fst (DSA.nigori_new_key ())
+let other_hash = User.make_hash (DSA.hash_key other_pub)
 
 let test_users () = 
   let db = create () in
@@ -32,7 +33,7 @@ let test_users () =
   match fake_key with
   | None -> ()
   | Some key -> begin
-    assert_string "Got public key of non-exising user"
+    assert_string "Got public key of non-existing user"
   end;
 
   let some_user = get_user db hash in

@@ -1,5 +1,6 @@
 open OUnit
 open Common
+open Cryptokit
 
 module P = Primitives
 
@@ -77,13 +78,13 @@ let valid_dsa = [
 
 (* Test function for DSA. *)
 let test_dsa () =
-  let keys = P.DSA.new_key "" in
+  let keys = P.DSA.nigori_new_key () in
   let pub_key = fst keys in
   let priv_key = snd keys in
   let f test = 
     let message = List.nth test 0 in
-    let signed = P.DSA.sign message priv_key in
-    let check = P.DSA.verify message signed pub_key in
+    let signed = P.DSA.nigori_sign message priv_key in
+    let check = P.DSA.nigori_verify message signed pub_key in
     ((string_of_bool true), (string_of_bool check)) in
   test_function valid_dsa f
 

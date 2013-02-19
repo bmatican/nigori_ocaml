@@ -1,5 +1,5 @@
 type t
-type public_key
+type public_key = Primitives.DSA.key
 type hash
 
 val create : public_key -> hash -> t

@@ -14,5 +14,3 @@ val concat : string list -> string
 
 val encode_length : string list -> string
 val decode_length : string -> string list
-
-val hash_key : string -> string

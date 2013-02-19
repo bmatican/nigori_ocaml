@@ -2,8 +2,10 @@ open Lwt
 open Cohttp
 open Cohttp_lwt_unix
 
+open Primitives
 open Messages_j
 open Messages_t
+open Messages
 
 let address = Config.host_address
 let port = Config.host_port
@@ -22,65 +24,49 @@ let print_response t = match_lwt t with
       exit 0
 
 let post message endpoint = 
+  Printf.printf "Posting message %s\nPointing at endpoint %s\n" message endpoint;
   print_response (Client.post ?body:(Body.body_of_string message) (url endpoint))
 
-let make_signature () = 
-  let key = ["some";"sig"] in
-  Base64.encode (Utils.encode_length key)
-
-let make_nonce () = 
-  let nonce = Nonce.create_random () in
-  (* Printf.eprintf "Made nonce %d %d\n" (Nonce.get_random nonce) (Nonce.get_time nonce); *)
-  Base64.encode (Nonce.to_string nonce)
-
-let pub_key = "pub_key_hash"
-
-let make_auth_request () = 
-  {
-    auth_request_public_key = pub_key;
-    auth_request_sig = make_signature ();
-    auth_request_nonce = make_nonce ();
-    auth_request_server_name = "server_name";
-  }
+let keys = DSA.nigori_new_key ()
+let pub_key, priv_key = keys
+let server_name = "server_name"
+let index = "index"
 
 let authenticate () =
-  let request = make_auth_request () in
+  let request = 
+    encode_auth_request 
+      (make_auth_request keys server_name) 
+  in
   let message = string_of_authenticate_request request in
   post message
 
 let register () =
-  let request = {
-    register_request_public_key = pub_key;
-    register_request_token = "some_token";
-  } in
+  let request = 
+    encode_register_request 
+      (make_register_request pub_key ()) 
+  in
   let message = string_of_register_request request in
   post message
 
 let unregister () =
-  let auth_request = make_auth_request () in
-  let request = {
-    unregister_request_auth = auth_request;
-  } in
+  let request = 
+    encode_unregister_request 
+      (make_unregister_request keys server_name)
+  in
   let message = string_of_unregister_request request in
   post message
 
 let get_revisions () =
-  let auth_request = make_auth_request () in
-  let request = {
-    get_revisions_request_auth = auth_request;
-    get_revisions_request_key = "key1";
-  } in
+  let request = encode_get_revisions_request
+    (make_get_revisions_request keys server_name index)
+  in
   let message = string_of_get_revisions_request request in
   post message
 
 let fake_put rev = 
-  let auth_request = make_auth_request () in
-  let request = {
-    put_request_auth = auth_request;
-    put_request_key = "key1";
-    put_request_revision = rev;
-    put_request_value = "value";
-  } in
+  let request = encode_put_request
+    (make_put_request keys server_name index rev (rev ^ "_value"))
+  in
   let message = string_of_put_request request in
   post message
 
