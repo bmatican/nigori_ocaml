@@ -13,18 +13,23 @@ let port = Config.host_port
 let url endpoint = 
   Uri.of_string (Printf.sprintf "http://%s:%d/%s" address port endpoint)
 
-let print_response t = match_lwt t with
+let print_response ~decode t = match_lwt t with
   | None -> 
       Printf.printf "Got no response back!\n"; exit 1
   | Some x -> 
-      (* let response = fst x in *)
+      let response = fst x in
       let body = snd x in
       lwt body = Body.string_of_body body in
-      Printf.printf "Got response back: %s\n" body;
+      let printing =
+        if Response.status response == `OK
+        then decode body
+        else body
+      in
+      Printf.printf "Got response back: %s\n" printing;
       exit 0
 
-let post message endpoint = 
-  print_response (Client.post ?body:(Body.body_of_string message) (url endpoint))
+let post message ?(decode=(fun x -> x)) endpoint = 
+  print_response ~decode (Client.post ?body:(Body.body_of_string message) (url endpoint))
 
 let keys = DSA.nigori_new_key ()
 let pub_key, priv_key = keys
@@ -54,12 +59,22 @@ let unregister =
   let message = string_of_unregister_request request in
   post message
 
+let decode_get_indices message = 
+  let response = get_indices_response_of_string message in
+  let decoded = decode_get_indices_response response in
+  string_of_get_indices_response decoded
+
 let get_indices =
   let request = encode_get_indices_request
     (make_get_indices_request keys server_name)
   in
   let message = string_of_get_indices_request request in
   post message
+
+let decode_get_revisions message =
+  let response = get_revisions_response_of_string message in
+  let decoded = decode_get_revisions_response response in
+  string_of_get_revisions_response decoded
 
 let get_revisions index =
   let request = encode_get_revisions_request
@@ -81,6 +96,11 @@ let delete key ?(revision=None) =
   in
   let message = string_of_delete_request request in
   post message
+
+let decode_get message =
+  let response = get_response_of_string message in
+  let decoded = decode_get_response response in
+  string_of_get_response decoded
 
 let get key ?(revision=None) =
   let request = encode_get_request
@@ -108,7 +128,9 @@ let choice () =
       unregister endpoint
     end
     | "get-indices" -> begin
-      get_indices endpoint
+      get_indices 
+        ~decode:decode_get_indices
+        endpoint
     end
     | "get-revisions" -> begin
       if Array.length Sys.argv != 3
@@ -118,7 +140,7 @@ let choice () =
       end
       else begin
         let index = Sys.argv.(2) in
-        get_revisions index endpoint
+        get_revisions index ~decode:decode_get_revisions endpoint
       end
     end
     | "delete" -> begin
@@ -150,7 +172,7 @@ let choice () =
           then None
           else Some (Sys.argv.(3))
         in
-        get key ~revision endpoint
+        get key ~revision ~decode:decode_get endpoint
       end
     end
     | "put" -> begin
