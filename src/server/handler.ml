@@ -157,7 +157,7 @@ let get_revisions h = begin
     let key = request.get_revisions_request_key in
     let some_revs = Database.get_revisions h.database user key in
     match some_revs with
-    | None -> Generic.internal ()
+    | None -> Generic.not_found ()
     | Some revs -> begin
       let response = make_get_revisions_response revs ~key:(Some (key)) () in
       let response = encode_get_revisions_response response in

@@ -398,9 +398,8 @@ module DSA = struct
     }
 
   let hash_key key =
-    (* TODO: actually have some hash? *)
     let group, actual_key = key in
-    bytes_of_zt group.p
+    SHA1.(to_string (apply (bytes_of_zt actual_key)))
 
   let serialize_key key = 
     let group, key_part = key in

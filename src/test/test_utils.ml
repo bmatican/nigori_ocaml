@@ -2,21 +2,23 @@ open Common
 
 (* Test cases for length encoding. *)
 let valid_encode_length = [
-  ["abc"; "\000\000\000\003abc"];
+  (["abc";], "\000\000\000\003abc");
+  ([], "";);
 ]
 
 (* Test function for length encoding. *)
 let test_encode_length () =
   let f test = 
-    let element = List.nth test 0 in
-    let expected = List.nth test 1 in
-    let result = Utils.encode_length [element] in
+    let elements = fst test in
+    let expected = snd test in
+    let result = Utils.encode_length elements in
     (expected, result) in
   test_function valid_encode_length f
 
 (* Test cases for length decoding. *)
 let valid_decode_length = [
   ["\000\000\000\003abc\000\000\000\004defg"; "abc"; "defg"];
+  ["";];
 ]
 
 (* Test function for length encoding. *)

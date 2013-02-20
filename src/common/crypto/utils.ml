@@ -89,19 +89,21 @@ let int_size = 4
 
 let rec decode_length s = 
   let len = String.length s in
-  if len < int_size
-  then begin
-    Printf.eprintf "wtf\n";
-    raise InvalidEncodingLength
+  if len == 0
+  then []
+  else begin
+    if len < int_size
+    then begin
+      Printf.eprintf "wtf\n";
+      raise InvalidEncodingLength
+    end
+    else
+      let encoded_size = String.sub s 0 int_size in
+      let size = bin2int encoded_size in
+      try
+        let message = String.sub s int_size size in
+        let offset = int_size + size in
+        let rest = len - offset in
+        message :: (decode_length (String.sub s offset rest))
+      with exn -> raise InvalidEncodingLength
   end
-  else
-    let encoded_size = String.sub s 0 int_size in
-    let size = bin2int encoded_size in
-    try
-      let message = String.sub s int_size size in
-      let offset = int_size + size in
-      let rest = len - offset in
-      if rest == 0
-      then [message]
-      else message :: (decode_length (String.sub s offset rest))
-    with exn -> raise InvalidEncodingLength

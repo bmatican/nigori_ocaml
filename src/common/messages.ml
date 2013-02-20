@@ -27,18 +27,18 @@ let dec_list fn lst =
   List.rev (List.fold_left f [] lst)
 
 
-let to_sign nonce server_name payload = 
+let to_sign nonce server_name command payload = 
   let payload_str = Utils.encode_length payload in
   let nt = Nonce.get_nt nonce in
   let nr = Nonce.get_nr nonce in
 
-  Utils.encode_length [server_name; nt; nr; payload_str;]
+  Utils.encode_length [to_bytes server_name; nt; nr; to_bytes command; payload_str;]
 
-let make_auth_request_internal keys server_name payload =
+let make_auth_request_internal keys server_name command payload =
   let pub_key = fst keys in
   let priv_key = snd keys in
   let nonce = Nonce.create_random () in
-  let message = to_sign nonce server_name payload in
+  let message = to_sign nonce server_name command payload in
   let r, s = DSA.sign message priv_key in
   {
     auth_request_public_key = DSA.hash_key pub_key;
@@ -48,17 +48,18 @@ let make_auth_request_internal keys server_name payload =
   }
 
 (* AUTHENTICATE REQUEST *)
-let payload_auth_request () = [to_bytes request_authenticate;]
+let payload_auth_request () = []
 
 let to_sign_auth_request request =
   to_sign 
     (Nonce.from_string request.auth_request_nonce)
     request.auth_request_server_name
+    request_authenticate
     (payload_auth_request ())
 
 let make_auth_request keys server_name =
   let payload = payload_auth_request () in
-  make_auth_request_internal keys server_name payload
+  make_auth_request_internal keys server_name request_authenticate payload
 
 let encode_auth_request request = 
   {
@@ -97,16 +98,16 @@ let decode_revision_value rv =
 
 (* GET REQUEST *)
 let payload_get_request key ?(revision=None) () =
-  let request_str = to_bytes request_get in
   match revision with
-  | None -> [request_str; key;]
-  | Some rev -> [request_str; key; rev;]
+  | None -> [key;]
+  | Some rev -> [key; rev;]
 
 let to_sign_get_request request = 
   let auth = request.get_request_auth in
   to_sign
     (Nonce.from_string auth.auth_request_nonce)
     auth.auth_request_server_name
+    request_get
     (payload_get_request 
       request.get_request_key 
       ~revision:request.get_request_revision ())
@@ -114,7 +115,7 @@ let to_sign_get_request request =
 let make_get_request keys server_name key ?(revision=None) () =
   let payload = payload_get_request key ~revision () in
   {
-    get_request_auth = make_auth_request_internal keys server_name payload;
+    get_request_auth = make_auth_request_internal keys server_name request_get payload;
     get_request_key = key;
     get_request_revision = revision;
   }
@@ -175,19 +176,21 @@ let decode_get_response response =
   }
 
 (* GET INDICES REQUEST *)
-let payload_get_indices_request () = [to_bytes request_get_indices;]
+let payload_get_indices_request () = []
 
 let to_sign_get_indices_request request = 
   let auth = request.get_indices_request_auth in
   to_sign
     (Nonce.from_string auth.auth_request_nonce)
     auth.auth_request_server_name
+    request_get_indices
     (payload_get_indices_request ())
     
 let make_get_indices_request keys server_name =
   let payload = payload_get_indices_request () in
   {
-    get_indices_request_auth = make_auth_request_internal keys server_name payload;
+    get_indices_request_auth = 
+      make_auth_request_internal keys server_name request_get_indices payload;
   }
 
 let encode_get_indices_request request = 
@@ -217,20 +220,22 @@ let decode_get_indices_response response =
   }
 
 (* GET REVISIONS REQUEST *)
-let payload_get_revisions_request key () = [to_bytes request_get_revisions; key;]
+let payload_get_revisions_request key () = [key;]
 
 let to_sign_get_revisions_request request = 
   let auth = request.get_revisions_request_auth in
   to_sign
     (Nonce.from_string auth.auth_request_nonce)
     auth.auth_request_server_name
+    request_get_revisions
     (payload_get_revisions_request 
       request.get_revisions_request_key ())
 
 let make_get_revisions_request keys server_name key =
   let payload = payload_get_revisions_request key () in
   {
-    get_revisions_request_auth = make_auth_request_internal keys server_name payload;
+    get_revisions_request_auth = 
+      make_auth_request_internal keys server_name request_get_revisions payload;
     get_revisions_request_key = key;
   }
 
@@ -278,13 +283,14 @@ let decode_get_revisions_response response =
   }
 
 (* PUT REQUEST *)
-let payload_put_request key revision value () = [to_bytes request_put; key; revision; value;]
+let payload_put_request key revision value () = [key; revision; value;]
 
 let to_sign_put_request request = 
   let auth = request.put_request_auth in
   to_sign
     (Nonce.from_string auth.auth_request_nonce)
     auth.auth_request_server_name
+    request_put
     (payload_put_request
       request.put_request_key
       request.put_request_revision
@@ -293,7 +299,8 @@ let to_sign_put_request request =
 let make_put_request keys server_name key revision value =
   let payload = payload_put_request key revision value () in
   {
-    put_request_auth = make_auth_request_internal keys server_name payload;
+    put_request_auth = 
+      make_auth_request_internal keys server_name request_put payload;
     put_request_key = key;
     put_request_revision = revision;
     put_request_value = value;
@@ -317,16 +324,16 @@ let decode_put_request request =
 
 (* DELETE REQUEST *)
 let payload_delete_request key ?(revision=None) () =
-  let request_str = to_bytes request_delete in
   match revision with
-  | None -> [request_str; key;]
-  | Some rev -> [request_str; key; rev;]
+  | None -> [key;]
+  | Some rev -> [key; rev;]
 
 let to_sign_delete_request request =
   let auth = request.delete_request_auth in
   to_sign
     (Nonce.from_string auth.auth_request_nonce)
     auth.auth_request_server_name
+    request_delete
     (payload_delete_request
       request.delete_request_key
       ~revision:request.delete_request_revision ())
@@ -334,7 +341,8 @@ let to_sign_delete_request request =
 let make_delete_request keys server_name key ?(revision=None) () =
   let payload = payload_delete_request key ~revision () in
   {
-    delete_request_auth = make_auth_request_internal keys server_name payload;
+    delete_request_auth = 
+      make_auth_request_internal keys server_name request_delete payload;
     delete_request_key = key;
     delete_request_revision = revision;
   }
@@ -383,19 +391,21 @@ let decode_register_request request =
   }
 
 (* UNREGISTER REQUEST *)
-let payload_unregister_request () = [to_bytes request_unregister;]
+let payload_unregister_request () = []
 
 let to_sign_unregister_request request = 
   let auth = request.unregister_request_auth in
   to_sign
    (Nonce.from_string auth.auth_request_nonce)
    auth.auth_request_server_name
+   request_unregister
    (payload_unregister_request ())
 
 let make_unregister_request keys server_name =
   let payload = payload_unregister_request () in
   {
-    unregister_request_auth = make_auth_request_internal keys server_name payload;
+    unregister_request_auth = 
+      make_auth_request_internal keys server_name request_unregister payload;
   }
 
 let encode_unregister_request request =
