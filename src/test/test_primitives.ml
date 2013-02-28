@@ -11,7 +11,7 @@ let valid_sha1 = [
 
 (* Test function for sha1. *)
 let test_sha1 () =
-  let f test = 
+  let f test =
     let m = List.nth test 0 in
     let expected = List.nth test 1 in
     let result = Utils.to_hex P.SHA1.(to_string (apply m)) in
@@ -25,7 +25,7 @@ let valid_hmac = [
 
 (* Test function for hmac. *)
 let test_hmac () =
-  let f test = 
+  let f test =
     let key  = List.nth test 0 in
     let message = List.nth test 1 in
     let expected = List.nth test 2 in
@@ -40,7 +40,7 @@ let valid_pbkdf2 = [
 
 (* Test function for pbkdf2. *)
 let test_pbkdf2 () =
-  let f test = 
+  let f test =
     let password = List.nth test 0 in
     let salt = List.nth test 1 in
     let iterations = int_of_string (List.nth test 2) in
@@ -58,9 +58,9 @@ let valid_aes256 = [
 
 (* Test function for aes256. *)
 let test_aes256 () =
-  let f test = 
+  let f test =
     let base_iv = List.nth test 0 in
-    let iv = 
+    let iv =
       if String.length base_iv == 0
       then P.InitializationVector.create_random ()
       else P.InitializationVector.create base_iv in
@@ -81,10 +81,10 @@ let test_dsa () =
   let keys = P.DSA.nigori_new_key () in
   let pub_key = fst keys in
   let priv_key = snd keys in
-  let f test = 
+  let f test =
     let message = List.nth test 0 in
-    let signed = P.DSA.nigori_sign message priv_key in
-    let check = P.DSA.nigori_verify message signed pub_key in
+    let signature = P.DSA.nigori_sign message priv_key in
+    let check = P.DSA.nigori_verify message signature pub_key in
     ((string_of_bool true), (string_of_bool check)) in
   test_function valid_dsa f
 
@@ -99,7 +99,7 @@ let test_dsa_serialization () =
   test_function [pub_key; priv_key;] f
 
 (* Test fixtures combined. *)
-let test_fixtures = 
+let test_fixtures =
   let name = "Primitives" in
   let tests = [
     ("sha1", test_sha1);
