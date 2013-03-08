@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: baa09b0e26be205910eafe4116c0351d)
+# DO NOT EDIT (digest: 8675f8d0986cb1bef0bc5cf32bd7e9e1)
 # Ignore VCS directories, you can use the same kind of rule outside 
 # OASIS_START/STOP if you want to exclude directories that contains 
 # useless stuff for the build process
@@ -47,6 +47,10 @@
 <server/*.ml{,i}>: pkg_lwt.syntax
 <server/*.ml{,i}>: pkg_cohttp
 <server/*.ml{,i}>: pkg_cohttp.lwt
+<server/*.ml{,i}>: pkg_dyntype
+<server/*.ml{,i}>: pkg_sqlite3
+<server/*.ml{,i}>: pkg_orm
+<server/*.ml{,i}>: pkg_orm.syntax
 <server/*.ml{,i}>: pkg_atdgen
 <server/*.ml{,i}>: pkg_yojson
 <server/*.ml{,i}>: pkg_cryptokit
@@ -62,11 +66,19 @@
 "server_nigori.byte": pkg_lwt.syntax
 "server_nigori.byte": pkg_cohttp
 "server_nigori.byte": pkg_cohttp.lwt
+"server_nigori.byte": pkg_dyntype
+"server_nigori.byte": pkg_sqlite3
+"server_nigori.byte": pkg_orm
+"server_nigori.byte": pkg_orm.syntax
 "server_nigori.byte": pkg_atdgen
 "server_nigori.byte": pkg_yojson
 "server_nigori.byte": pkg_cryptokit
 "server_nigori.byte": pkg_gmp
 <*.ml{,i}>: use_lib_server
+<*.ml{,i}>: pkg_dyntype
+<*.ml{,i}>: pkg_sqlite3
+<*.ml{,i}>: pkg_orm
+<*.ml{,i}>: pkg_orm.syntax
 # Executable client_nigori
 "client_nigori.byte": use_lib_client
 "client_nigori.byte": use_lib_common
@@ -123,6 +135,10 @@
 "test/test_database.byte": pkg_lwt.syntax
 "test/test_database.byte": pkg_cohttp
 "test/test_database.byte": pkg_cohttp.lwt
+"test/test_database.byte": pkg_dyntype
+"test/test_database.byte": pkg_sqlite3
+"test/test_database.byte": pkg_orm
+"test/test_database.byte": pkg_orm.syntax
 "test/test_database.byte": pkg_atdgen
 "test/test_database.byte": pkg_yojson
 "test/test_database.byte": pkg_cryptokit
@@ -138,6 +154,10 @@
 "test/test_nonce.byte": pkg_lwt.syntax
 "test/test_nonce.byte": pkg_cohttp
 "test/test_nonce.byte": pkg_cohttp.lwt
+"test/test_nonce.byte": pkg_dyntype
+"test/test_nonce.byte": pkg_sqlite3
+"test/test_nonce.byte": pkg_orm
+"test/test_nonce.byte": pkg_orm.syntax
 "test/test_nonce.byte": pkg_atdgen
 "test/test_nonce.byte": pkg_yojson
 "test/test_nonce.byte": pkg_cryptokit
@@ -152,6 +172,10 @@
 <test/*.ml{,i}>: pkg_lwt.syntax
 <test/*.ml{,i}>: pkg_cohttp
 <test/*.ml{,i}>: pkg_cohttp.lwt
+<test/*.ml{,i}>: pkg_dyntype
+<test/*.ml{,i}>: pkg_sqlite3
+<test/*.ml{,i}>: pkg_orm
+<test/*.ml{,i}>: pkg_orm.syntax
 <test/*.ml{,i}>: pkg_atdgen
 <test/*.ml{,i}>: pkg_yojson
 <test/*.ml{,i}>: pkg_cryptokit

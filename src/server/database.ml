@@ -3,13 +3,13 @@ module type DB = sig
 
   val create : unit -> t
 
+  val get_user : t -> User.hash -> User.t option
   val have_user : t -> User.hash -> bool
   val add_user : t -> User.public_key -> User.hash -> bool
   val delete_user : t -> User.t -> bool
-  val get_user : t -> User.hash -> User.t option
   val get_public_key : t -> User.hash -> User.public_key option
 
-  val check_and_add_nonce : t -> Nonce.t -> User.public_key -> bool
+  val check_and_add_nonce : t -> Nonce.t -> User.hash -> bool
   val clear_old_nonces : t -> unit
 
   val get_indices : t -> User.t -> string list option

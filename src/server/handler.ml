@@ -84,7 +84,7 @@ module Make (DB : Database.DB) = struct
         else begin
           let key_hash = request.auth_request_public_key in
           (* apparently this is the hash... *)
-          let hash = User.make_hash key_hash in
+          let hash = User.string_to_hash key_hash in
           let some_user = DB.get_user db hash in
           match some_user with
           | None -> Generic.unauthorized ~msg:"No such user" () 
@@ -92,7 +92,10 @@ module Make (DB : Database.DB) = struct
             let pub_key = User.get_key user in
             let nonce_data = request.auth_request_nonce in
             let nonce = Nonce.from_string (nonce_data) in
+            (*
             let ret = DB.check_and_add_nonce db nonce pub_key in
+            *)
+            let ret = DB.check_and_add_nonce db nonce hash in
             if not ret
             then Generic.unauthorized ~msg:"Invalid nonce" ()
             else begin
@@ -252,7 +255,7 @@ module Make (DB : Database.DB) = struct
       let ret = DB.add_user 
           h.database 
           pub_key
-          (User.make_hash hash)
+          (User.string_to_hash hash)
       in
       if ret
       then

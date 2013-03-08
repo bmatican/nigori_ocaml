@@ -6,12 +6,12 @@ Authors:     Bogdan-Alexandru Matican
 License:     Apache
 BuildTools:  ocamlbuild
 
-# Libraries 
+# Libraries
 Library lib_crypto
-  Modules:            Constants, 
-                      Primitives, 
+  Modules:            Constants,
+                      Primitives,
                       Derivations
-  BuildDepends:       cryptokit, 
+  BuildDepends:       cryptokit,
                       gmp
   Path:               common/crypto/
   Install:            false
@@ -24,7 +24,7 @@ Library lib_common
                       Messages_t,
                       Messages_j
   BuildDepends:       lib_crypto,
-                      atdgen, 
+                      atdgen,
                       yojson,
                       cohttp
   Path:               common/
@@ -35,9 +35,9 @@ Library lib_client
   BuildDepends:       lib_common,
                       lib_crypto,
                       lwt.unix,
-                      lwt, 
-                      lwt.syntax, 
-                      cohttp, 
+                      lwt,
+                      lwt.syntax,
+                      cohttp,
                       cohttp.lwt
   Path:               client/
   Install:            false
@@ -46,15 +46,20 @@ Library lib_server
   Modules:            User,
                       Database,
                       Hash_database,
+                      Sql_database,
                       Handler,
                       Server_unix
   BuildDepends:       lib_common,
                       lib_crypto,
                       lwt.unix,
-                      lwt, 
-                      lwt.syntax, 
-                      cohttp, 
-                      cohttp.lwt
+                      lwt,
+                      lwt.syntax,
+                      cohttp,
+                      cohttp.lwt,
+                      dyntype,
+                      sqlite3,
+                      orm,
+                      orm.syntax
   Path:               server/
   Install:            false
 
@@ -69,11 +74,11 @@ Library lib_test
 Executable server_nigori
   Path:               .
   MainIs:             server_nigori.ml
-  BuildDepends:       lib_common, 
+  BuildDepends:       lib_common,
                       lib_crypto,
                       lib_server
   Install:            false
- 
+
 Executable client_nigori
   Path:               .
   MainIs:             client_nigori.ml
@@ -81,14 +86,14 @@ Executable client_nigori
                       lib_crypto,
                       lib_client
   Install:            false
- 
+
 # Tests
 Executable test_primitives
   Path:               test/
   MainIs:             test_primitives.ml
   BuildDepends:       lib_crypto,
                       lib_test,
-                      oUnit 
+                      oUnit
   Install:            false
 
 Test test_primitives
@@ -98,7 +103,7 @@ Test test_primitives
 Executable test_utils
   Path:               test/
   MainIs:             test_utils.ml
-  BuildDepends:       lib_crypto, 
+  BuildDepends:       lib_crypto,
                       lib_test,
                       oUnit
   Install:            false

@@ -10,3 +10,6 @@ setup.*
 # added recently...not sure how to make it get cleaned by itself..
 # probably shouldn't :p
 *.mllib
+
+# testing
+run.sh

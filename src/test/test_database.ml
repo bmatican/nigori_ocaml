@@ -5,9 +5,9 @@ open Messages_t
 open Primitives
 
 let pub = fst (DSA.nigori_new_key ())
-let hash = User.make_hash (DSA.hash_key pub)
+let hash = User.string_to_hash (DSA.hash_key pub)
 let other_pub = fst (DSA.nigori_new_key ())
-let other_hash = User.make_hash (DSA.hash_key other_pub)
+let other_hash = User.string_to_hash (DSA.hash_key other_pub)
 
 let test_users () =
   let open Hash_database.DB in

@@ -16,7 +16,7 @@ module DB = struct
 
   (* TODO: Ocaml doesn't seem to have O(1) Sets. *)
   type map_nonce = (Nonce.t, bool) Hashtbl.t
-  type map_nonces = (User.public_key, map_nonce) Hashtbl.t
+  type map_nonces = (User.hash, map_nonce) Hashtbl.t
 
   let make_map_revisions () = Hashtbl.create default_revisions_size
   let make_store () = Hashtbl.create default_store_size
@@ -214,18 +214,19 @@ module DB = struct
       end
     end
 
-  let check_and_add_nonce store nonce pub_key =
+  let check_and_add_nonce store nonce pub_hash =
     if not (Nonce.is_recent nonce)
     then false
     else begin
-      if not (Hashtbl.mem store.nonces pub_key)
+      if not (Hashtbl.mem store.nonces pub_hash)
       then begin
         let nonce_store = make_nonce () in
-        Hashtbl.replace store.nonces pub_key nonce_store;
+        Hashtbl.replace nonce_store nonce true;
+        Hashtbl.replace store.nonces pub_hash nonce_store;
         true
       end
       else begin
-        let nonces = Hashtbl.find store.nonces pub_key in
+        let nonces = Hashtbl.find store.nonces pub_hash in
         if Hashtbl.mem nonces nonce
         then false
         else begin
