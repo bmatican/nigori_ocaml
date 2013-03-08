@@ -1,8 +1,6 @@
 open OUnit
 
 open Common
-
-open Database
 open Messages_t
 open Primitives
 
@@ -11,7 +9,8 @@ let hash = User.make_hash (DSA.hash_key pub)
 let other_pub = fst (DSA.nigori_new_key ())
 let other_hash = User.make_hash (DSA.hash_key other_pub)
 
-let test_users () = 
+let test_users () =
+  let open Hash_database.DB in
   let db = create () in
   assert_false (have_user db hash) "Users present in empty db";
 
@@ -57,6 +56,7 @@ let test_users () =
   | Some user -> assert_string "Got a user that shouldn't exit"
 
 let test_records () =
+  let open Hash_database.DB in
   let db = create () in
   let other_user = User.create other_pub other_hash in
 
@@ -82,7 +82,7 @@ let test_records () =
 
     let ret = (put_record db user key1 rev2 data2) in
     assert_true ret "Cannot add values to db for same key diff rev";
-    
+
     let ret =  (put_record db user key2 rev1 data1) in
     assert_true ret "Cannot add values to db for diff key";
 
@@ -94,7 +94,7 @@ let test_records () =
 
     let ret = (put_record db user key1 rev1 data2) in
     assert_false ret "Adding same data for same key same rev";
- 
+
     let fake_indices = get_indices db other_user in
     match fake_indices with
     | None -> ()
@@ -109,7 +109,7 @@ let test_records () =
       assert_true (indices == [key1; key2;]) "Invalid indices for user"
     end;
 
-    let make_rv rev data = 
+    let make_rv rev data =
       {
         revval_revision = rev1;
         revval_value = data1;
@@ -132,7 +132,7 @@ let test_records () =
       end
     ) in
     List.iter f [indices1; indices2;];
-    
+
     let other_record = get_record db other_user key1 () in
     match other_record with
     | None -> ()
@@ -212,7 +212,7 @@ let test_records () =
   end
 
 (* Test fixtures combined. *)
-let test_fixtures = 
+let test_fixtures =
   let name = "Database" in
   let tests = [
     ("users", test_users);

@@ -45,6 +45,7 @@ Library lib_client
 Library lib_server
   Modules:            User,
                       Database,
+                      Hash_database,
                       Handler,
                       Server_unix
   BuildDepends:       lib_common,
