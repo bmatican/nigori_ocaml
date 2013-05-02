@@ -110,5 +110,6 @@ module DSA : sig
 
   val nigori_sign: string -> key -> string * string
   val nigori_verify: string -> string * string -> key -> bool
+  val print_key: key -> unit
   val nigori_new_key: unit -> key * key
 end

@@ -1,85 +1,62 @@
-module P = Primitives.PBKDF2 
+module P = Primitives.PBKDF2
+module Enc = Primitives.Enc
+module C = Constants
 
-module type Keys = sig
-  type username
-  type password
-  type servername
-  type salt 
-
+module UnassistedKeys : Derivations_abstract.Keys = struct
   type t = {
-    username : username;
-    password : password;
-    servername : servername;
-    salt : salt;
+    username : string;
+    password : string;
+    servername : string;
+    salt : string;
   }
 
-  val data : t option ref
-  val create_salt : username -> password -> servername -> unit
-
-  type k_user
-  type k_enc
-  type k_mac
-  type k_iv
-  exception SaltNotCreated
-
-  val get_k_user : unit -> k_user
-  val get_k_enc : unit -> k_enc
-  val get_k_mac : unit -> k_mac
-  val get_k_iv : unit -> k_iv
-end
-
-module UnassistedKeys : Keys = struct
-  type username = string
-  type password = string
-  type servername = string
-  type salt = string
-
-  type t = {
-    username : username;
-    password : password;
-    servername : servername;
-    salt : salt;
-  }
-
-  let data = ref None
-  let create_salt username password servername =
-    let s_user = "" in
-    data := Some {
+  let create ~username ~password ~servername =
+    let user_and_server = Utils.encode_length [username; servername;] in
+    let s_user = P.apply user_and_server C.user_salt C.n_salt C.b_s_user in
+    {
       username = username;
       password = password;
       servername = servername;
-      salt = s_user;
-    } 
+      salt = P.to_string s_user;
+    }
 
   type k_user = P.t
   type k_enc = P.t
   type k_mac = P.t
   type k_iv = P.t
-  exception SaltNotCreated
 
-  let get_k_user () = match !data with
-    None -> raise SaltNotCreated
-    | Some d -> P.apply d.password d.salt Constants.n_user Constants.b_k_dsa
-  let get_k_enc () = match !data with
-    None -> raise SaltNotCreated
-    | Some d -> P.apply d.password d.salt Constants.n_enc Constants.b_k_enc
-  let get_k_mac () = match !data with
-    None -> raise SaltNotCreated
-    | Some d -> P.apply d.password d.salt Constants.n_mac Constants.b_k_mac
-  let get_k_iv () = match !data with
-    None -> raise SaltNotCreated
-    | Some d -> P.apply d.password d.salt Constants.n_iv Constants.b_k_iv
-end
+  let generate_k_user keys = P.apply keys.password keys.salt C.n_user C.b_k_dsa
+  let to_string_k_user k_user = P.to_string k_user
 
-(*
-module AssistedKeys = struct
-  type k_user = string
-  type k_enc = string
-  type k_mac = string
-  type k_iv = string
-  let get_k_user () = unit -> k_user
-  let get_k_enc () = unit -> k_enc
-  let get_k_mac () = unit -> k_mac
-  let get_k_iv () = unit -> k_iv
+  let generate_k_enc keys = P.apply keys.password keys.salt C.n_enc C.b_k_enc
+  let to_string_k_enc k_enc = P.to_string k_enc
+
+  let generate_k_mac keys = P.apply keys.password keys.salt C.n_mac C.b_k_mac
+  let to_string_k_mac k_mac = P.to_string k_mac
+
+  let generate_k_iv keys = P.apply keys.password keys.salt C.n_iv C.b_k_iv
+  let to_string_k_iv k_iv = P.to_string k_iv
+
+  let enc_index keys plaintext =
+    Enc.(to_string (enc_det
+      (to_string_k_enc (generate_k_enc keys))
+      (to_string_k_mac (generate_k_mac keys))
+      (to_string_k_iv (generate_k_iv keys))
+      plaintext
+    ))
+
+  let enc_revision keys plaintext =
+    Enc.(to_string (enc_det
+      (to_string_k_enc (generate_k_enc keys))
+      (to_string_k_mac (generate_k_mac keys))
+      (to_string_k_iv (generate_k_iv keys))
+      plaintext
+    ))
+
+  let enc_value keys plaintext =
+    Enc.(to_string (enc
+      (to_string_k_enc (generate_k_enc keys))
+      (to_string_k_mac (generate_k_mac keys))
+      plaintext
+    ))
 end
-*)

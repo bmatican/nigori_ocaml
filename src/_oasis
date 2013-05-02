@@ -9,6 +9,7 @@ BuildTools:  ocamlbuild
 # Libraries
 Library lib_crypto
   Modules:            Constants,
+                      Derivations_abstract,
                       Primitives,
                       Derivations
   BuildDepends:       cryptokit,
