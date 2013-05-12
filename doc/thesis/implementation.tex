@@ -1,0 +1,50 @@
+\chapter{Design and Implementation}
+Different pieces of the system and how they are supposed to interact.
+Each section should present the important work done inside it.
+Before subpieces are introduced, the story of how the pieces will be put together will be presented.
+
+\section{Common}
+Important abstraction pieces such as nonces, revisions and configuration.
+Details about bigger picture and major subcomponents.
+
+\subsection{Crypto}
+\begin{itemize}
+  \item primitives required for encryption and OCaml bindings
+  \item derivation module for Nigori specifics
+\end{itemize}
+
+\subsection{Communication}
+\begin{itemize}
+  \item messages
+  \item serialization
+  \item encoding
+  \item encryption and decryption
+\end{itemize}
+
+\section{Server}
+Details about what happens in the server.
+Description of internals, state and data storage.
+
+\subsection{Request Handling}
+How actions are peformed through the RESTful interface.
+How requests at endpoints get converted into actions on the server.
+Filtering of requests, approval, authentication, responses.
+
+List of requests and actions?
+
+\subsection{Storage}
+Abstractions for in-memory and SQLite storage.
+Implementation details for both.
+OCaml usefulness for implementation.
+Provided interface from DB.
+
+Quirks, problems and limitations.
+
+\section{Client}
+Details about how the client operates and discusses with the server.
+Client key derivations, data encryption and such.
+Message packaging, signing and marshalling.
+
+\section{Testing}
+Importance of having testing done in parallel to guarantee system integrity.
+Details of the pieces of the system that have been tested and how?
