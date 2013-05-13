@@ -3,9 +3,13 @@ Different pieces of the system and how they are supposed to interact.
 Each section should present the important work done inside it.
 Before subpieces are introduced, the story of how the pieces will be put together will be presented.
 
-\section{Common}
-Important abstraction pieces such as nonces, revisions and configuration.
-Details about bigger picture and major subcomponents.
+Potentially list dependencies of modules to be able to link to them in the following.
+
+\section{Shared}
+Important, albeit smaller abstraction pieces such as nonces, revisions and configurations.
+Details about bigger picture, major subcomponents and how they come together and will be used by either client or server.
+
+Discuss how these pieces are the critical core part of the project, as they provide the abstraction capabilities, across platforms.
 
 \subsection{Crypto}
 \begin{itemize}
@@ -15,10 +19,10 @@ Details about bigger picture and major subcomponents.
 
 \subsection{Communication}
 \begin{itemize}
-  \item messages
-  \item serialization
-  \item encoding
-  \item encryption and decryption
+  \item messages (described, as per RFC or code?)
+  \item serialization (JSON, protobuf, details on choices)
+  \item encoding (Base64, discussion on problems and choices)
+  \item encryption and decryption (core of Nigori data handling -- probably talk in Client part)
 \end{itemize}
 
 \section{Server}
@@ -48,3 +52,8 @@ Message packaging, signing and marshalling.
 \section{Testing}
 Importance of having testing done in parallel to guarantee system integrity.
 Details of the pieces of the system that have been tested and how?
+
+\section{JavaScript implementation}
+Discuss how the semi--automated version of the client to JS is done.
+Explain manual pieces and how they had to be glued together.
+Potentially show how, in the end, after boilerplate is overcome, changes to core get propagated to client, leading to fast prototyping.

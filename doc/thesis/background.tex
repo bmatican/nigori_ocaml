@@ -3,21 +3,31 @@
 Most of this section will be completed in parallel with the implementation part.
 This will help to basically introduce (only) the concepts required for understanding the work done.
 
-\section{Nigori}
-\begin{itemize}
-  \item details of why it is required and useful
-  \item RFC and state of project
-  \item how it all works and individual pieces
-  \item client and server
-  \item used crypto
-  \item communication requirements
-  \item messages and serialization
-\end{itemize}
+Discuss how functional programming and structuring implementation into separate building blocks helps protocol design.
+Also, benefits of type safety should not degrade performance. TODO: this though, should probably be part of hypothesis, somehow, so as to properly use it in eval section.
 
-\section{Mirage}
+Explain the \textit{libOS} techniques from Mirage and how they can be pulled in from the OS world into crafting protocol implementations.
 \begin{itemize}
-  \item what it is and how it is useful
+  \item what is Mirage and how it is useful -- libraries and abstractions
   \item how this would support the expectations of the thesis
-  \item how this supports the choice for OCaml
-  \item features I need to introduce
+  \item features/library descriptions I need to introduce
+\end{itemize}
+Link functional programming language explanations and Mirage to choice of OCaml as language for project.
+
+Discuss constraints of project in context of MPhil -- why choose only one protocol (Nigori) and the limits of compiling code to various platforms (OCaml for native, JS for browser).
+Highlight ultimate choice of instantiation of protocol as Nigori.
+Link to the RFC specification and how it was used -- probably talk about modifications brought to it later.
+Touch upon the actual timeline of the Nigori project and versions throughout: Python, Java, now DART client.
+Express how, using OCaml and Mirage libraries from a design perspective can lead to fixed server implementations and shared code that can aid clients across different platforms -- examples: native OCaml one, browser version in JS.
+
+\begin{itemize}
+  \item details of why Nigori is a good project, both as protocol and idea
+  \item RFC and state(s) of project
+  \item explain how it all works and the individual pieces
+  \begin{itemize}
+    \item client and server
+    \item used crypto
+    \item communication requirements
+    \item messages and serialization
+  \end{itemize}
 \end{itemize}
