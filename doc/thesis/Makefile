@@ -23,4 +23,4 @@ $(PAPER).dvi: $(PAPER).tex $(PAPER).bib $(FILES)
 
 clean:
 	$(RM) -f $(PAPER).pdf $(PAPER).ps $(PAPER).dvi
-	$(RM) -f *.log *.aux *.toc *.bbl *.blg *.lot *.lof
+	$(RM) -f *.log *.aux *.toc *.bbl *.blg *.lot *.lof *.out

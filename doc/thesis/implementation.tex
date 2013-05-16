@@ -1,29 +1,59 @@
 \chapter{Design and Implementation}
-Different pieces of the system and how they are supposed to interact.
-Each section should present the important work done inside it.
-Before subpieces are introduced, the story of how the pieces will be put together will be presented.
+Nigori, as a system, is basically an encrypted key--value store, built for the cloud.
+As such, the big picture consists of primarily two components: a client and a server.
+Nevertheless, due to the nature of the interactions between these two pieces, quite a sizeable chunk of code ends up being shared, particularly the communication and encryption mechanics.
+This chapter is modeled after the actual implementation, showing the shared code, the client and the server in separation, while also discussing the interactions between them.
 
-Potentially list dependencies of modules to be able to link to them in the following.
+In adition to describing the base OCaml implementation, this chapter also provides details about the testing done to ensure the application performs according to specifications.
+Lastly, the separate compilation from OCaml code to JavaScript is also detailed, along with both what it requires as well as what it entails.
+
+TODO: potentially add a figure or set of figures showing module dependencies and individual pieces, to help with direct naming.
 
 \section{Shared}
-Important, albeit smaller abstraction pieces such as nonces, revisions and configurations.
-Details about bigger picture, major subcomponents and how they come together and will be used by either client or server.
-
-Discuss how these pieces are the critical core part of the project, as they provide the abstraction capabilities, across platforms.
+This section of the codebase actually represents the core of the application.
+For the most part, components in this category are used by both the server and the client.
+As such, they have been implemented according to the simplicity and modularity principles previously mentioned.
+Implicitly, this made using this core in both client and server, a straightforward venture.
+Moreover, it also allowed for an easy prototyping of the javascript version of the client, as well, since the core functionality was merely functorized to match the targetted platform.
 
 \subsection{Crypto}
+As listed in the initial draft for Nigori, several cryptographic functions are required for the operation of the protocol.
+These functions were built on top of the cryptokit library for OCaml and abstracted into their individulal modules, each capable of providing the expected functionality as well as being tested or verified accordingly.
+
+As such, we had several base primitives that were required:
+\begin{description}
+  \item[SHA-1] TODO: minor description
+  \item[HMAC] TODO: explain customizations
+  \item[PBKDF] TODO: detail process and link to RFC
+  \item[DSA] TODO: explain problems, explain usage pattern
+\end{description}
+
+Of the primitives, the most important one was the password based key derivation function.
+This lies at the core of the communication mechanics in Nigori.
+
+TODO: explain how PBKDF is used for deriving keys.
+
+TODO: give some minor overview of the constants used for PBKDF.
+
+TODO: forward reference how PBKDF is used in messages for encrypting the payload.
+
 \begin{itemize}
   \item primitives required for encryption and OCaml bindings
+  \item constants
   \item derivation module for Nigori specifics
 \end{itemize}
 
 \subsection{Communication}
 \begin{itemize}
+  \item specific data structures (nonces, revisions)
   \item messages (described, as per RFC or code?)
   \item serialization (JSON, protobuf, details on choices)
   \item encoding (Base64, discussion on problems and choices)
   \item encryption and decryption (core of Nigori data handling -- probably talk in Client part)
 \end{itemize}
+
+\subsection{Extra}
+Details about nonces, constants and default configurations.
 
 \section{Server}
 Details about what happens in the server.

@@ -1,33 +1,66 @@
 \chapter{Background and Related Work}
+The key insight for achieving good protocol design is understanding the two most crucial themes that should underpin the development process: \textit{simplicity} and \textit{modularity} \cite{ProtocolDesign}.
 
-Most of this section will be completed in parallel with the implementation part.
-This will help to basically introduce (only) the concepts required for understanding the work done.
+Simplicity refers to the idea that a well design protocol will often be made up of smaller pieces. In order to properly understand the working of the protocol, at large, it should suffice to understand the individual pieces, in isolation, together with the respective interactions between them. Moreover, these pieces should be specialized; they should have one clear functionality, which should potentially be easy to verify and guarantee.
 
-Discuss how functional programming and structuring implementation into separate building blocks helps protocol design.
-Also, benefits of type safety should not degrade performance. TODO: this though, should probably be part of hypothesis, somehow, so as to properly use it in eval section.
+Modularity, on the other hand, is supposed to complement simplicity. The concept implies that, in building a complex feature, it should require multiple smaller individual pieces. However, these should function as black boxes, assuming a well specified input and output: perfectly fine in isolation, to the extent that they can be both developed, maintained or replaced, accordingly, without affecting the integrity of the whole.
 
-Explain the \textit{libOS} techniques from Mirage and how they can be pulled in from the OS world into crafting protocol implementations.
+\section{Fast Prototyping}
+TODO: Considering the above, we've chosen to use functional programming throughout this project. Details about modularity, composition, type safety, verifyability.
+
+TODO: Talk about development funnel, many potentially formally verified components at the bottom (encryption?), narrow waist functional core implementation, broad spectrum of applications or target platforms through separate compilation. Potentially touch upon IP funnel.
+
+TODO: Iterative design, Spiral Model of software development. Experiment with a \wip protocol. Decide to work on an implementation from scratch, while specification is still under development, as this would explicitly give the required context.
+
+\section{Choice of Protocol}
+TODO: Choice of protocol for Nigori. Details about initial draft \cite{NigoriDraft} and the \wip RFC \cite{NigoriRFC}. Timeline and constant changes / versions motivating the iterative design outlook. Project motivation fits the requirement for flexibility and deploying to multiple platforms. Describe internal and how it works. Describe explicit pieces to be well understood.
 \begin{itemize}
-  \item what is Mirage and how it is useful -- libraries and abstractions
-  \item how this would support the expectations of the thesis
-  \item features/library descriptions I need to introduce
+  \item client and server
+  \item used crypto (describe important pieces to understand in advance, cite RFCs)
+  \item communication requirements (REST interface, HTTP requests and responses)
+  \item messages, encoding and serialization (Base64 encoding, JSON / protobuf)
 \end{itemize}
-Link functional programming language explanations and Mirage to choice of OCaml as language for project.
 
-Discuss constraints of project in context of MPhil -- why choose only one protocol (Nigori) and the limits of compiling code to various platforms (OCaml for native, JS for browser).
-Highlight ultimate choice of instantiation of protocol as Nigori.
-Link to the RFC specification and how it was used -- probably talk about modifications brought to it later.
-Touch upon the actual timeline of the Nigori project and versions throughout: Python, Java, now DART client.
-Express how, using OCaml and Mirage libraries from a design perspective can lead to fixed server implementations and shared code that can aid clients across different platforms -- examples: native OCaml one, browser version in JS.
+In light of the objectives for this thesis, we decided to analyze the Nigori protocol.
+The project was initially started at Google, with a draft specification by Ben Laurie in 2010 \cite{NigoriDraft}.
+It proposed a protocol (and an implicit system revolving around it) that would allow users to login to a server use it for data storage, yet using encryption such that the server would be unaware of what the data actually represented.
+The timeline of the project later involved an initial proof--of--concept implementation in python by Alastair Beredsford (TODO: need to cite timeline and potential location?).
+This was followed by a complete implementation in Java (TOOD: need to give location and authors?), in parallel with the development of an RFC for the protocol specification \cite{NigoriRFC}.
+Furthermore, in parallel with this thesis, a DART based version of the required client for the protocol was being developed.
+Thus, given the volatility of the project development, coupled with the multi--platform requirements, Nigori was a perfect candidate for an implementation based off of a continuous development specification.
 
-\begin{itemize}
-  \item details of why Nigori is a good project, both as protocol and idea
-  \item RFC and state(s) of project
-  \item explain how it all works and the individual pieces
-  \begin{itemize}
-    \item client and server
-    \item used crypto
-    \item communication requirements
-    \item messages and serialization
-  \end{itemize}
-\end{itemize}
+As a protocol, Nigori was envisioned out of the increasingly prevalent use of the cloud as a direct storage platform and the direct impact that has on the privacy of both users and their respective data.
+One the one hand, in such an environment, the cloud is one centralized entity for storing application specific data -- including potentially sensitive user data.
+Nevertheless, the actualy physical representation of the storage can be completely decentralized, to the extent of data lying in separate geographic regions.
+This raises questions of the security and integrity of data, if the respective servers get compromised.
+
+One the other hand, in parallel with the adoption of using cloud storage, the number of diferent types of clients accessing the respective data has also featured an increase in diversity.
+As such, we now have different native mobile OS applications, various traditional (PC/laptop) operating systems and their native applications, as well as various browser counterparts, all serving as clients, potentially sending data back into the cloud.
+In this context, being able to develop the core of a protocol once and have it compiled and used consistently and with strong guarantees across platforms, becomes a very strong incentive.
+What is more, Nigori was created assuming the diversity of clients, both generically, and particularly, with each individual user potentially having different devices, running the same applications, that would require both proper syncrhonization and privacy of data.
+
+By using Nigori, applications must be aware of two major components: the local client and the remote server.
+The client is responsible for managing a key--value store of user data, as well as handing the required encryption of the respective data.
+What is more, the client also makes use of distributed version control primitives (TODO: git, papers?) in order to guarantee that content is properly syncronized across a user's different devices and conflicts are able to be properly mitigated.
+TODO: The server, on the other hand, is solely responsible for properly authenticating connecting users and handle their requests.
+
+TODO: discuss messages
+
+TODO: discuss REST and rest interface
+
+TODO: discuss encoding and serialization
+
+TODO: discuss client side crypto
+
+TODO: introduce primitives
+
+TODO: introduce key derivations
+
+\begin{comment}
+Moreover, the login part of the protocol involved the user having one single password that would be used to derive the cryptographic keys needed for encryption and communication.
+\end{comment}
+
+\section{Further Methodology}
+TODO: Bring in Mirage and libOS techniques. Explain how Mirage works. Describe needed library parts. Talk about how, using it, the core becomes stable and enforcing modularity. Make choice of OCaml concrete, as Mirage libraries are directly available.
+
+TODO: Support functional programming further, as choice for implementation. Bring support for OCaml and describe needed pieces for reader. Moreover, using supporting tools around the language, we can compile to different platforms from same core code -- native OCaml, JS for browser.
