@@ -39,18 +39,18 @@ module Make (DB : Database.DB) = struct
   type out = (Response.t * Body.t) Lwt.t
 
   module Generic = struct
-    let respond ?msg status = 
+    let respond ?msg status =
       match msg with
       | None -> Server.respond_string ~status ~body:(Code.string_of_status status) ()
       | Some m -> Server.respond_string ~status ~body:m ()
 
-    let method_not_allowed ?msg () = 
+    let method_not_allowed ?msg () =
       respond ?msg `Method_not_allowed
 
-    let not_found ?msg () = 
+    let not_found ?msg () =
       respond ?msg`Not_found
 
-    let unauthorized ?msg () = 
+    let unauthorized ?msg () =
       respond ?msg `Unauthorized
 
     let internal ?msg () =
@@ -71,7 +71,7 @@ module Make (DB : Database.DB) = struct
       else
         fn ()
 
-    let authenticate_user db auth_request ?(message="") fn = 
+    let authenticate_user db auth_request ?(message="") fn =
       let request = auth_request in (* TODO: figure out if decode here... *)
       let signature = request.auth_request_sig in
       try
@@ -87,7 +87,7 @@ module Make (DB : Database.DB) = struct
           let hash = User.string_to_hash key_hash in
           let some_user = DB.get_user db hash in
           match some_user with
-          | None -> Generic.unauthorized ~msg:"No such user" () 
+          | None -> Generic.unauthorized ~msg:"No such user" ()
           | Some user -> begin
             let pub_key = User.get_key user in
             let nonce_data = request.auth_request_nonce in
@@ -99,7 +99,7 @@ module Make (DB : Database.DB) = struct
             if not ret
             then Generic.unauthorized ~msg:"Invalid nonce" ()
             else begin
-              let message_to_check = 
+              let message_to_check =
                 if String.length message == 0
                 then to_sign_auth_request request
                 else message
@@ -116,7 +116,7 @@ module Make (DB : Database.DB) = struct
           end
         end
       with
-      | Utils.InvalidEncodingLength -> 
+      | Utils.InvalidEncodingLength ->
           Generic.unauthorized ~msg:"Invalid signature encoding" ()
   end
 
@@ -142,10 +142,11 @@ module Make (DB : Database.DB) = struct
     let request = decode_get_request request in
     let auth_request = request.get_request_auth in
     let message = to_sign_get_request request in
-    Validation.authenticate_user h.database auth_request ~message (fun user -> begin
+    let database = h.database in
+    Validation.authenticate_user database auth_request ~message (fun user -> begin
       let key = request.get_request_key in
       let revision = request.get_request_revision in
-      let some_revisions = DB.get_record h.database user key ~revision () in
+      let some_revisions = DB.get_record ~database ~user ~key ~revision () in
       match some_revisions with
       | None -> Generic.not_found ()
       | Some revisions -> begin
@@ -163,8 +164,9 @@ module Make (DB : Database.DB) = struct
     let request = decode_get_indices_request request in
     let auth_request = request.get_indices_request_auth in
     let message = to_sign_get_indices_request request in
-    Validation.authenticate_user h.database auth_request ~message (fun user -> begin
-      let some_indices = DB.get_indices h.database user in
+    let database = h.database in
+    Validation.authenticate_user database auth_request ~message (fun user -> begin
+      let some_indices = DB.get_indices ~database ~user in
       match some_indices with
       | None -> Generic.not_found ()
       | Some indices -> begin
@@ -182,9 +184,10 @@ module Make (DB : Database.DB) = struct
     let request = decode_get_revisions_request request in
     let auth_request = request.get_revisions_request_auth in
     let message = to_sign_get_revisions_request request in
-    Validation.authenticate_user h.database auth_request ~message (fun user ->begin
+    let database = h.database in
+    Validation.authenticate_user database auth_request ~message (fun user ->begin
       let key = request.get_revisions_request_key in
-      let some_revs = DB.get_revisions h.database user key in
+      let some_revs = DB.get_revisions ~database ~user ~key in
       match some_revs with
       | None -> Generic.not_found ()
       | Some revs -> begin
@@ -202,11 +205,12 @@ module Make (DB : Database.DB) = struct
     let request = decode_put_request request in
     let auth_request = request.put_request_auth in
     let message = to_sign_put_request request in
-    Validation.authenticate_user h.database auth_request ~message (fun user -> begin
+    let database = h.database in
+    Validation.authenticate_user database auth_request ~message (fun user -> begin
       let key = request.put_request_key in
       let revision = request.put_request_revision in
-      let value = request.put_request_value in
-      let ret = DB.put_record h.database user key revision value in
+      let data = request.put_request_value in
+      let ret = DB.put_record ~database ~user ~key ~revision ~data in
       if ret
       then Generic.ok ~msg:"Record successfully added" ()
       else Generic.internal ~msg:"Could not add record" ()
@@ -219,10 +223,11 @@ module Make (DB : Database.DB) = struct
     let request = decode_delete_request request in
     let auth_request = request.delete_request_auth in
     let message = to_sign_delete_request request in
-    Validation.authenticate_user h.database auth_request ~message (fun user -> begin
+    let database = h.database in
+    Validation.authenticate_user database auth_request ~message (fun user -> begin
       let key = request.delete_request_key in
       let revision = request.delete_request_revision in
-      let ret = DB.delete_record h.database user key ~revision () in
+      let ret = DB.delete_record ~database ~user ~key ~revision () in
       if ret
       then Generic.ok ~msg:"Record successfully deleted" ()
       else Generic.not_found ~msg:"Could not delete record" ()
@@ -238,7 +243,8 @@ module Make (DB : Database.DB) = struct
       lwt body = Body.string_of_body h.body in
       let request = authenticate_request_of_string body in
       let request = decode_auth_request request in
-      Validation.authenticate_user h.database request (fun user -> begin
+      let database = h.database in
+      Validation.authenticate_user database request (fun user -> begin
         Generic.ok ~msg:"Authentication successful" ()
       end)
     end)
@@ -249,13 +255,14 @@ module Make (DB : Database.DB) = struct
     let request = register_request_of_string body in
     let request = decode_register_request request in
     let pub_key = request.register_request_public_key in
+    let database = h.database in
     try
       let pub_key = DSA.deserialize_key pub_key in
       let hash = DSA.hash_key pub_key in
-      let ret = DB.add_user 
-          h.database 
-          pub_key
-          (User.string_to_hash hash)
+      let ret = DB.add_user
+          ~database
+          ~pub_key
+          ~pub_hash:(User.string_to_hash hash)
       in
       if ret
       then
@@ -272,8 +279,9 @@ module Make (DB : Database.DB) = struct
     let request = decode_unregister_request request in
     let auth_request = request.unregister_request_auth in
     let message = to_sign_unregister_request request in
-    Validation.authenticate_user h.database auth_request ~message (fun user -> begin
-      let ret = DB.delete_user h.database user in
+    let database = h.database in
+    Validation.authenticate_user database auth_request ~message (fun user -> begin
+      let ret = DB.delete_user ~database ~user in
       if ret
       then
         Generic.ok ~msg:"User unregistered" ()

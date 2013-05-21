@@ -54,66 +54,66 @@ module DB = struct
     }
 
 
-  let have_user store pub_hash = 
-    Hashtbl.mem store.users pub_hash
+  let have_user ~database ~pub_hash =
+    Hashtbl.mem database.users pub_hash
 
 
-  let add_user store pub_key pub_hash =
-    if have_user store pub_hash
+  let add_user ~database ~pub_key ~pub_hash =
+    if have_user database pub_hash
     then false
     else begin
       let user = User.create pub_key pub_hash in
-      Hashtbl.replace store.users pub_hash user;
-      Hashtbl.replace store.stores user (make_store ());
+      Hashtbl.replace database.users pub_hash user;
+      Hashtbl.replace database.stores user (make_store ());
       true
     end
 
 
-  let delete_user store user =
+  let delete_user ~database ~user =
     let hash = User.get_hash user in
-    if not (have_user store hash)
+    if not (have_user database hash)
     then false
     else begin
-      Hashtbl.remove store.users hash;
-      if not (Hashtbl.mem store.stores user)
+      Hashtbl.remove database.users hash;
+      if not (Hashtbl.mem database.stores user)
       then false
       else begin
-        (Hashtbl.remove store.stores user);
+        (Hashtbl.remove database.stores user);
         true
       end
     end
 
 
-  let get_user store pub_hash =
-    if have_user store pub_hash
+  let get_user ~database ~pub_hash =
+    if have_user database pub_hash
     then
-      Some (Hashtbl.find store.users pub_hash)
+      Some (Hashtbl.find database.users pub_hash)
     else None
 
 
-  let get_public_key store pub_hash = 
-    if have_user store pub_hash
+  let get_public_key ~database ~pub_hash =
+    if have_user database pub_hash
     then
-      Some (User.get_key (Hashtbl.find store.users pub_hash))
+      Some (User.get_key (Hashtbl.find database.users pub_hash))
     else None
-   
 
-  let get_indices store user = 
+
+  let get_indices ~database ~user =
     let hash = User.get_hash user in
-    if not (have_user store hash)
+    if not (have_user database hash)
     then None
     else begin
-      let s = Hashtbl.find store.stores user in
+      let s = Hashtbl.find database.stores user in
       Some (key_set s)
     end
 
 
-  let get_record store user key ?(revision=None) () =
+  let get_record ~database ~user ~key ?(revision=None) () =
     let hash = User.get_hash user in
-    if not (have_user store hash)
+    if not (have_user database hash)
     then None
     else begin
-      let s = Hashtbl.find store.stores user in
+      let s = Hashtbl.find database.stores user in
       if not (Hashtbl.mem s key)
       then None
       else begin
@@ -145,12 +145,12 @@ module DB = struct
     end
 
 
-  let get_revisions store user key =
+  let get_revisions ~database ~user ~key =
     let hash = User.get_hash user in
-    if not (have_user store hash)
+    if not (have_user database hash)
     then None
     else begin
-      let s = Hashtbl.find store.stores user in
+      let s = Hashtbl.find database.stores user in
       if not (Hashtbl.mem s key)
       then None
       else begin
@@ -160,13 +160,13 @@ module DB = struct
     end
 
 
-  let put_record store user key revision data =
+  let put_record ~database ~user ~key ~revision ~data =
     let hash = User.get_hash user in
-    if not (have_user store hash)
+    if not (have_user database hash)
     then false
     else begin
-      let s = Hashtbl.find store.stores user in
-      let revs = 
+      let s = Hashtbl.find database.stores user in
+      let revs =
         if Hashtbl.mem s key
         then Hashtbl.find s key
         else begin
@@ -176,7 +176,7 @@ module DB = struct
         end
       in
       if Hashtbl.mem revs revision
-      then 
+      then
         let prev = Hashtbl.find revs revision in
         if prev == data
         then true
@@ -188,12 +188,12 @@ module DB = struct
     end
 
 
-  let delete_record store user key ?(revision=None) () =
+  let delete_record ~database ~user ~key ?(revision=None) () =
     let hash = User.get_hash user in
-    if not (have_user store hash)
+    if not (have_user database hash)
     then false
     else begin
-      let s = Hashtbl.find store.stores user in
+      let s = Hashtbl.find database.stores user in
       if not (Hashtbl.mem s key)
       then false
       else begin
@@ -214,19 +214,19 @@ module DB = struct
       end
     end
 
-  let check_and_add_nonce store nonce pub_hash =
+  let check_and_add_nonce ~database ~nonce ~pub_hash =
     if not (Nonce.is_recent nonce)
     then false
     else begin
-      if not (Hashtbl.mem store.nonces pub_hash)
+      if not (Hashtbl.mem database.nonces pub_hash)
       then begin
         let nonce_store = make_nonce () in
         Hashtbl.replace nonce_store nonce true;
-        Hashtbl.replace store.nonces pub_hash nonce_store;
+        Hashtbl.replace database.nonces pub_hash nonce_store;
         true
       end
       else begin
-        let nonces = Hashtbl.find store.nonces pub_hash in
+        let nonces = Hashtbl.find database.nonces pub_hash in
         if Hashtbl.mem nonces nonce
         then false
         else begin
@@ -236,7 +236,7 @@ module DB = struct
       end
     end
 
-  let clear_old_nonces store =
+  let clear_old_nonces ~database =
     let clear_all = (fun hash nonces -> begin
       let clear = (fun nonce boolean -> begin
         if Nonce.is_recent nonce
@@ -244,5 +244,5 @@ module DB = struct
       end) in
       Hashtbl.iter clear nonces
     end) in
-    Hashtbl.iter clear_all store.nonces
+    Hashtbl.iter clear_all database.nonces
 end

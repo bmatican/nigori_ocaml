@@ -4,66 +4,66 @@ open Common
 open Messages_t
 open Primitives
 
-let pub = fst (DSA.nigori_new_key ())
-let hash = User.string_to_hash (DSA.hash_key pub)
+let pub_key = fst (DSA.nigori_new_key ())
+let pub_hash = User.string_to_hash (DSA.hash_key pub_key)
 let other_pub = fst (DSA.nigori_new_key ())
 let other_hash = User.string_to_hash (DSA.hash_key other_pub)
 
 let test_users () =
   let open Hash_database.DB in
-  let db = create () in
-  assert_false (have_user db hash) "Users present in empty db";
+  let database = create () in
+  assert_false (have_user ~database ~pub_hash) "Users present in empty ~database";
 
-  let ret = add_user db pub hash in
+  let ret = add_user ~database ~pub_key ~pub_hash in
   assert_true ret "Cannot add user";
-  assert_true (have_user db hash) "User not added";
+  assert_true (have_user ~database ~pub_hash) "User not added";
 
-  let ret = add_user db pub hash in
+  let ret = add_user ~database ~pub_key ~pub_hash in
   assert_false ret "Adding already existing user";
 
-  let some_key = get_public_key db hash in
+  let some_key = get_public_key ~database ~pub_hash in
   match some_key with
   | None -> assert_string "Cannot get pub_key of user"
   | Some key -> begin
-    assert_true (pub == key) "Public keys do not match"
+    assert_true (pub_key == key) "Public keys do not match"
   end;
 
-  let fake_key = get_public_key db other_hash in
+  let fake_key = get_public_key ~database ~pub_hash:other_hash in
   match fake_key with
   | None -> ()
   | Some key -> begin
     assert_string "Got public key of non-existing user"
   end;
 
-  let some_user = get_user db hash in
+  let some_user = get_user ~database ~pub_hash in
   match some_user with
   | None -> assert_string "Cannot get user that exists"
   | Some user -> begin
-    assert_true (User.get_key user == pub) "User pub_key is different";
-    assert_true (User.get_hash user == hash) "User hash is different";
+    assert_true (User.get_key user == pub_key) "User pub_key is different";
+    assert_true (User.get_hash user == pub_hash) "User ~pub_hash is different";
 
-    let ret = delete_user db user in
+    let ret = delete_user ~database ~user in
     assert_true ret "Cannot delete user";
-    assert_false (have_user db hash) "User did not get deleted";
+    assert_false (have_user ~database ~pub_hash) "User did not get deleted";
 
-    let ret = delete_user db user in
+    let ret = delete_user ~database ~user in
     assert_false ret "Delete worked on non-existing user"
   end;
 
-  let fake_user = get_user db other_hash in
+  let fake_user = get_user ~database ~pub_hash:other_hash in
   match fake_user with
   | None -> ()
   | Some user -> assert_string "Got a user that shouldn't exit"
 
 let test_records () =
   let open Hash_database.DB in
-  let db = create () in
+  let database = create () in
   let other_user = User.create other_pub other_hash in
 
-  let ret = add_user db pub hash in
+  let ret = add_user ~database ~pub_key ~pub_hash in
   assert_true ret "Could not add user";
 
-  let some_user = get_user db hash in
+  let some_user = get_user ~database ~pub_hash in
   match some_user with
   | None -> assert_string "Could not get user"
   | Some user -> begin
@@ -77,32 +77,32 @@ let test_records () =
     let other_key = "other_key" in
     let other_rev = "other_rev" in
 
-    let ret = (put_record db user key1 rev1 data1) in
-    assert_true ret "Cannot add values to db";
+    let ret = (put_record ~database ~user ~key:key1 ~revision:rev1 ~data:data1) in
+    assert_true ret "Cannot add values to ~database";
 
-    let ret = (put_record db user key1 rev2 data2) in
-    assert_true ret "Cannot add values to db for same key diff rev";
+    let ret = (put_record ~database ~user ~key:key1 ~revision:rev2 ~data:data2) in
+    assert_true ret "Cannot add values to ~database for same key diff rev";
 
-    let ret =  (put_record db user key2 rev1 data1) in
-    assert_true ret "Cannot add values to db for diff key";
+    let ret =  (put_record ~database ~user ~key:key2 ~revision:rev1 ~data:data1) in
+    assert_true ret "Cannot add values to ~database for diff key";
 
-    let ret = (put_record db user key2 rev2 data2) in
-    assert_true ret "Cannot add values to db for diff key diff rev";
+    let ret = (put_record ~database ~user ~key:key2 ~revision:rev2 ~data:data2) in
+    assert_true ret "Cannot add values to ~database for diff key diff rev";
 
-    let ret = (put_record db user key1 rev1 data1) in
+    let ret = (put_record ~database ~user ~key:key1 ~revision:rev1 ~data:data1) in
     assert_true ret "Adding same data for same key same rev";
 
-    let ret = (put_record db user key1 rev1 data2) in
+    let ret = (put_record ~database ~user ~key:key1 ~revision:rev1 ~data:data2) in
     assert_false ret "Adding same data for same key same rev";
 
-    let fake_indices = get_indices db other_user in
+    let fake_indices = get_indices ~database ~user:other_user in
     match fake_indices with
     | None -> ()
     | Some indices -> begin
       assert_string "Got indices for invalid user"
     end;
 
-    let some_indices = get_indices db user in
+    let some_indices = get_indices ~database ~user in
     match some_indices with
     | None -> assert_string "Could not get indices for valid user"
     | Some indices -> begin
@@ -124,7 +124,7 @@ let test_records () =
 
     let indices2 = [rv21; rv22;] in
     let f = (fun el ->
-      let some_record = get_record db user key1 () in
+      let some_record = get_record ~database ~user ~key:key1 () in
       match some_record with
       | None -> assert_string "Could not get record for valid user"
       | Some record -> begin
@@ -133,7 +133,7 @@ let test_records () =
     ) in
     List.iter f [indices1; indices2;];
 
-    let other_record = get_record db other_user key1 () in
+    let other_record = get_record ~database ~user:other_user ~key:key1 () in
     match other_record with
     | None -> ()
     | Some record -> begin
@@ -145,7 +145,7 @@ let test_records () =
       let rv = snd el in
       let key = List.nth input 0 in
       let rev = List.nth input 1 in
-      let some_rv = get_record db user key ~revision:(Some (rev)) () in
+      let some_rv = get_record ~database ~user ~key ~revision:(Some (rev)) () in
       match some_rv with
       | None -> assert_string "Could not get data for valid user, key and rev"
       | Some test_rv -> begin
@@ -160,21 +160,21 @@ let test_records () =
     ] in
     List.iter f test;
 
-    let other_data = get_record db other_user key1 ~revision:(Some (rev1)) () in
+    let other_data = get_record ~database ~user:other_user ~key:key1 ~revision:(Some (rev1)) () in
     match other_data with
     | None -> ()
     | Some data -> begin
       assert_string "Got data for invalid user"
     end;
 
-    let other_data = get_record db user other_key ~revision:(Some (rev1)) () in
+    let other_data = get_record ~database ~user ~key:other_key ~revision:(Some (rev1)) () in
     match other_data with
     | None -> ()
     | Some data -> begin
       assert_string "Got data for invalid key"
     end;
 
-    let other_data = get_record db user key1 ~revision:(Some (other_rev)) () in
+    let other_data = get_record ~database ~user ~key:key1 ~revision:(Some (other_rev)) () in
     match other_data with
     | None -> ()
     | Some data -> begin
@@ -188,7 +188,7 @@ let test_records () =
     let f = (fun el ->
       let key = fst el in
       let revs = snd el in
-      let some_revisions = get_revisions db user key in
+      let some_revisions = get_revisions ~database ~user ~key in
       match some_revisions with
       | None -> assert_string "Could not get revisions for valid user and key"
       | Some revisions -> begin
@@ -199,13 +199,13 @@ let test_records () =
 
     let input = [key1;key2;] in
     let f = (fun key ->
-      let ret = delete_record db user key ~revision:None () in
+      let ret = delete_record ~database ~user ~key ~revision:None () in
       assert_true ret "Could not delete record"
     ) in
     List.iter f input;
 
     let f = (fun key ->
-      let ret = delete_record db user key ~revision:None () in
+      let ret = delete_record ~database ~user ~key ~revision:None () in
       assert_false ret "Deleted record again"
     ) in
     List.iter f input

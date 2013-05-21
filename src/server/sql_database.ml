@@ -146,17 +146,17 @@ module DB = struct
     | Some(u) -> fn u
 
 
-  let get_user database pub_hash =
+  let get_user ~database ~pub_hash =
     option_with_user database pub_hash (fun user -> begin
       Some(User.from_string user.user_string)
     end)
 
 
-  let have_user database pub_hash =
+  let have_user ~database ~pub_hash =
     bool_with_user database pub_hash (fun _ -> true)
 
 
-  let add_user database pub_key pub_hash =
+  let add_user ~database ~pub_key ~pub_hash =
     if have_user database pub_hash
     then false
     else begin
@@ -171,7 +171,7 @@ module DB = struct
     end
 
 
-  let delete_user database user =
+  let delete_user ~database ~user =
     let hash = User.get_hash user in
     bool_with_user database hash (fun u -> begin
       (* TODO: do proper? *)
@@ -181,13 +181,13 @@ module DB = struct
     end)
 
 
-  let get_public_key database pub_hash =
+  let get_public_key ~database ~pub_hash =
     option_with_user database pub_hash (fun u -> begin
       Some(User.get_key (User.from_string u.user_string))
     end)
 
 
-  let get_indices database user =
+  let get_indices ~database ~user =
     let hash = User.get_hash user in
     option_with_user database hash (fun u -> begin
       let key_fk_user = make_key_fk_user u in
@@ -199,7 +199,7 @@ module DB = struct
     end)
 
 
-  let get_record database user key ?(revision=None) () =
+  let get_record ~database ~user ~key ?(revision=None) () =
     let hash = User.get_hash user in
     option_with_user database hash (fun u -> begin
       match database_get_key database u key with
@@ -232,7 +232,7 @@ module DB = struct
     end)
 
 
-  let get_revisions database user key =
+  let get_revisions ~database ~user ~key =
     let hash = User.get_hash user in
     option_with_user database hash (fun u -> begin
       match database_get_key database u key with
@@ -247,7 +247,7 @@ module DB = struct
     end)
 
 
-  let put_record database user key revision data =
+  let put_record ~database ~user ~key ~revision ~data =
     let hash = User.get_hash user in
     bool_with_user database hash (fun u -> begin
     (* TOOD: continue from here *)
@@ -275,7 +275,7 @@ module DB = struct
     end)
 
 
-  let delete_record database user key ?(revision=None) () =
+  let delete_record ~database ~user ~key ?(revision=None) () =
     let hash = User.get_hash user in
     bool_with_user database hash (fun u -> begin
       match revision with
@@ -307,7 +307,7 @@ module DB = struct
     end)
 
 
-  let check_and_add_nonce database nonce pub_hash =
+  let check_and_add_nonce ~database ~nonce ~pub_hash =
     (* TODO: raise issue about this? *)
     bool_with_user database pub_hash (fun u -> begin
       match database_get_nonce database u nonce with
@@ -323,7 +323,7 @@ module DB = struct
     end)
 
 
-  let clear_old_nonces database =
+  let clear_old_nonces ~database =
     let clear = (fun db_nonce ->
       let nonce = Nonce.from_string db_nonce.nonce_string in
       if Nonce.is_recent nonce
