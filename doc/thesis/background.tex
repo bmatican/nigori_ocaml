@@ -13,14 +13,6 @@ TODO: Talk about development funnel, many potentially formally verified componen
 TODO: Iterative design, Spiral Model of software development. Experiment with a \wip protocol. Decide to work on an implementation from scratch, while specification is still under development, as this would explicitly give the required context.
 
 \section{Choice of Protocol}
-TODO: Choice of protocol for Nigori. Details about initial draft \cite{NigoriDraft} and the \wip RFC \cite{NigoriRFC}. Timeline and constant changes / versions motivating the iterative design outlook. Project motivation fits the requirement for flexibility and deploying to multiple platforms. Describe internal and how it works. Describe explicit pieces to be well understood.
-\begin{itemize}
-  \item client and server
-  \item used crypto (describe important pieces to understand in advance, cite RFCs)
-  \item communication requirements (REST interface, HTTP requests and responses)
-  \item messages, encoding and serialization (Base64 encoding, JSON / protobuf)
-\end{itemize}
-
 In light of the objectives for this thesis, we decided to analyze the Nigori protocol.
 The project was initially started at Google, with a draft specification by Ben Laurie in 2010 \cite{NigoriDraft}.
 It proposed a protocol (and an implicit system revolving around it) that would allow users to login to a server and use it for data storage, yet using encryption such that the server would be unaware of what the data actually represented.
@@ -49,15 +41,15 @@ Nevertheless, this is meant to increase the overall safety of the user data, as,
 Since security is the primary responsibility of the client, most of the encryption requirements are placed on the application clients.
 As discussed in the specifications, the protocol requires a couple of primitives in order to function appropriately.
 \begin{description}
-  \item[SHA1]
-  \item[HMAC]
-  \item[PBKDF]
-  \item[DSA]
+  \item[SHA1] TODO
+  \item[HMAC] TODO
+  \item[PBKDF] TODO
+  \item[DSA] TODO
 \end{description}
 
-TODO: discuss client side crypto (single password requirement, server mitigations)
+TODO: discuss client side crypto and the single password ideology
 
-TODO: introduce key derivations after password recovery techniques; this is the primary mechanism to guarantee the identity of the user
+TODO: introduce key derivations and password recovery techniques; this is the primary mechanism to guarantee the identity of the user
 
 TODO: talk about the four types of keys being derived: kuser, kenc, kmac, kiv
 
