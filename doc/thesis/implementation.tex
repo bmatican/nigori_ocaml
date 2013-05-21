@@ -2,7 +2,7 @@
 Nigori, as a system, is basically an encrypted key--value store, built for the cloud.
 As such, the big picture consists of primarily two components: a client and a server.
 Nevertheless, due to the nature of the interactions between these two pieces, quite a sizeable chunk of code ends up being shared, particularly the communication and encryption mechanics.
-This chapter is modeled after the actual implementation, showing the shared code, the client and the server in separation, while also discussing the interactions between them.
+This chapter is modeled after the actual implementation, showing the shared code, and the client and the server in separation, while also discussing the interactions between them.
 
 In adition to describing the base OCaml implementation, this chapter also provides details about the testing done to ensure the application performs according to specifications.
 Lastly, the separate compilation from OCaml code to JavaScript is also detailed, along with both what it requires as well as what it entails.
@@ -10,7 +10,7 @@ Lastly, the separate compilation from OCaml code to JavaScript is also detailed,
 TODO: potentially add a figure or set of figures showing module dependencies and individual pieces, to help with direct naming.
 
 \section{Shared}
-This section of the codebase actually represents the core of the application.
+The coresponding section of the codebase for shared code actually represents the core of the application.
 For the most part, components in this category are used by both the server and the client.
 As such, they have been implemented according to the simplicity and modularity principles previously mentioned.
 Implicitly, this made using this core in both client and server, a straightforward venture.
@@ -25,23 +25,20 @@ As such, we had several base primitives that were required:
   \item[SHA-1] TODO: minor description
   \item[HMAC] TODO: explain customizations
   \item[PBKDF] TODO: detail process and link to RFC
-  \item[DSA] TODO: explain problems, explain usage pattern
+  \item[DSA] TODO: explain what it is primarily used for
 \end{description}
 
-Of the primitives, the most important one was the password based key derivation function.
-This lies at the core of the communication mechanics in Nigori.
+Of the primitives, the most important one was PBKDF.
+This lies at the core of the encryption mechanics in Nigori.
+Coupled with the central user password, this function is responsible for generating the keys that are then used both for authentication as well as encrypting the user's data.
 
 TODO: explain how PBKDF is used for deriving keys.
 
 TODO: give some minor overview of the constants used for PBKDF.
 
-TODO: forward reference how PBKDF is used in messages for encrypting the payload.
+TODO: discuss how the keys are used for secret encryption
 
-\begin{itemize}
-  \item primitives required for encryption and OCaml bindings
-  \item constants
-  \item derivation module for Nigori specifics
-\end{itemize}
+TODO: DSA usage patterns, forward reference messages; problems and solutions
 
 \subsection{Communication}
 \begin{itemize}
@@ -53,7 +50,7 @@ TODO: forward reference how PBKDF is used in messages for encrypting the payload
 \end{itemize}
 
 \subsection{Extra}
-Details about nonces, constants and default configurations.
+Details about nonces, constants and default configurations; utility function from the library core
 
 \section{Server}
 Details about what happens in the server.
@@ -67,6 +64,15 @@ Filtering of requests, approval, authentication, responses.
 List of requests and actions?
 
 \subsection{Storage}
+As far as storage was concearned, the server had several requirements.
+On the one hand, the server needs to hold both explicit user data, as well as certain pieces of metadata, for security purposes.
+For example, nonce and timestamp data is recorded in the system, on a per user basis, to prevent potential replay attacks.
+This goes in line with the requirements of the specification.
+
+On the other hand, design wise, we had the choice of either a memory based storage system or an actual physical storage one.
+In the end, we decided to opt for both, as the module system in OCaml made functorizing the aforementioned required functionality relatively easy to achieve.
+
+
 Abstractions for in-memory and SQLite storage.
 Implementation details for both.
 OCaml usefulness for implementation.

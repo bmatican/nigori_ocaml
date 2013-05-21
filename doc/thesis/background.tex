@@ -23,11 +23,10 @@ TODO: Choice of protocol for Nigori. Details about initial draft \cite{NigoriDra
 
 In light of the objectives for this thesis, we decided to analyze the Nigori protocol.
 The project was initially started at Google, with a draft specification by Ben Laurie in 2010 \cite{NigoriDraft}.
-It proposed a protocol (and an implicit system revolving around it) that would allow users to login to a server use it for data storage, yet using encryption such that the server would be unaware of what the data actually represented.
+It proposed a protocol (and an implicit system revolving around it) that would allow users to login to a server and use it for data storage, yet using encryption such that the server would be unaware of what the data actually represented.
 The timeline of the project later involved an initial proof--of--concept implementation in python by Alastair Beredsford (TODO: need to cite timeline and potential location?).
 This was followed by a complete implementation in Java (TOOD: need to give location and authors?), in parallel with the development of an RFC for the protocol specification \cite{NigoriRFC}.
-Furthermore, in parallel with this thesis, a DART based version of the required client for the protocol was being developed.
-Thus, given the volatility of the project development, coupled with the multi--platform requirements, Nigori was a perfect candidate for an implementation based off of a continuous development specification.
+Furthermore, in parallel with this thesis, a DART (TODO: cite DART) based version of the required client for the protocol was being developed.
 
 As a protocol, Nigori was envisioned out of the increasingly prevalent use of the cloud as a direct storage platform and the direct impact that has on the privacy of both users and their respective data.
 One the one hand, in such an environment, the cloud is one centralized entity for storing application specific data -- including potentially sensitive user data.
@@ -37,28 +36,41 @@ This raises questions of the security and integrity of data, if the respective s
 One the other hand, in parallel with the adoption of using cloud storage, the number of diferent types of clients accessing the respective data has also featured an increase in diversity.
 As such, we now have different native mobile OS applications, various traditional (PC/laptop) operating systems and their native applications, as well as various browser counterparts, all serving as clients, potentially sending data back into the cloud.
 In this context, being able to develop the core of a protocol once and have it compiled and used consistently and with strong guarantees across platforms, becomes a very strong incentive.
-What is more, Nigori was created assuming the diversity of clients, both generically, and particularly, with each individual user potentially having different devices, running the same applications, that would require both proper syncrhonization and privacy of data.
+What is more, Nigori was created assuming the diversity of clients, both generically, and particularly, with each individual user potentially having different devices, running the same applications, that would require both proper syncrhonization mechanisms and strong privacy of data.
+
+Thus, given both the volatility of the project development, coupled with the multi--platform requirements, Nigori was a perfect candidate for an implementation based off of a continuous development specification.
 
 By using Nigori, applications must be aware of two major components: the local client and the remote server.
-The client is responsible for managing a key--value store of user data, as well as handing the required encryption of the respective data.
-What is more, the client also makes use of distributed version control primitives (TODO: git, papers?) in order to guarantee that content is properly syncronized across a user's different devices and conflicts are able to be properly mitigated.
-TODO: The server, on the other hand, is solely responsible for properly authenticating connecting users and handle their requests.
+The client is primarily responsible for properly encrypting the user data and ensuring communication with the server is done approprietely.
+What is more, the client also makes use of distributed version control primitives (TODO: git, papers?) in order to guarantee that content is properly syncronized across a user's different devices and potential conflicts are able to be properly mitigated.
+As such, the protocol becomes highly client--centric, placing the responsibility of both security and conflict resolution on the user end.
+Nevertheless, this is meant to increase the overall safety of the user data, as, removing control from the server, implicitly places control in the hands of the user (client).
 
-TODO: discuss messages
+Since security is the primary responsibility of the client, most of the encryption requirements are placed on the application clients.
+As discussed in the specifications, the protocol requires a couple of primitives in order to function appropriately.
+\begin{description}
+  \item[SHA1]
+  \item[HMAC]
+  \item[PBKDF]
+  \item[DSA]
+\end{description}
 
-TODO: discuss REST and rest interface
+TODO: discuss client side crypto (single password requirement, server mitigations)
 
-TODO: discuss encoding and serialization
+TODO: introduce key derivations after password recovery techniques; this is the primary mechanism to guarantee the identity of the user
 
-TODO: discuss client side crypto
+TODO: talk about the four types of keys being derived: kuser, kenc, kmac, kiv
 
-TODO: introduce primitives
+TODO: talk about data encryption (key, revision, data)
 
-TODO: introduce key derivations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+TODO: The server, on the other hand, is solely responsible for properly authenticating connecting users and handling their requests.
 
-\begin{comment}
-Moreover, the login part of the protocol involved the user having one single password that would be used to derive the cryptographic keys needed for encryption and communication.
-\end{comment}
+TODO: discuss REST and rest interface; communication is primarily done via a RESTful interface
+
+TODO: discuss messages; separate REST endpoints cover different functionality; each piece of functionality comes with its respective message
+
+TODO: discuss encoding and serialization; the transmitted messages must be properly formated and understood by both server and client; Base64 encoding for content; JSON / protobuf for serialization
 
 \section{Further Methodology}
 TODO: Bring in Mirage and libOS techniques. Explain how Mirage works. Describe needed library parts. Talk about how, using it, the core becomes stable and enforcing modularity. Make choice of OCaml concrete, as Mirage libraries are directly available.
