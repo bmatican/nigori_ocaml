@@ -5,66 +5,151 @@ Simplicity refers to the idea that a well design protocol will often be made up 
 
 Modularity, on the other hand, is supposed to complement simplicity. The concept implies that, in building a complex feature, it should require multiple smaller individual pieces. However, these should function as black boxes, assuming a well specified input and output: perfectly fine in isolation, to the extent that they can be both developed, maintained or replaced, accordingly, without affecting the integrity of the whole.
 
-\section{Fast Prototyping}
+\section{Fast Prototyping: Functional Programming}
 TODO: Considering the above, we've chosen to use functional programming throughout this project. Details about modularity, composition, type safety, verifyability.
 
 TODO: Talk about development funnel, many potentially formally verified components at the bottom (encryption?), narrow waist functional core implementation, broad spectrum of applications or target platforms through separate compilation. Potentially touch upon IP funnel.
 
 TODO: Iterative design, Spiral Model of software development. Experiment with a \wip protocol. Decide to work on an implementation from scratch, while specification is still under development, as this would explicitly give the required context.
 
-\section{Choice of Protocol}
+\section{Choice of Protocol: Nigori}
 In light of the objectives for this thesis, we decided to analyze the Nigori protocol.
 The project was initially started at Google, with a draft specification by Ben Laurie in 2010 \cite{NigoriDraft}.
 It proposed a protocol (and an implicit system revolving around it) that would allow users to login to a server and use it for data storage, yet using encryption such that the server would be unaware of what the data actually represented.
-The timeline of the project later involved an initial proof--of--concept implementation in python by Alastair Beredsford (TODO: need to cite timeline and potential location?).
-This was followed by a complete implementation in Java (TOOD: need to give location and authors?), in parallel with the development of an RFC for the protocol specification \cite{NigoriRFC}.
-Furthermore, in parallel with this thesis, a DART (TODO: cite DART) based version of the required client for the protocol was being developed.
+The timeline of the project later involved Alastair Beredsford (TODO: maybe reference time at Google?) creating an initial proof--of--concept implementation in python and a follow--up migration to Java.
+An RFC \cite{NigoriRFC} of the protocol specification was also in the works in the meantime.
+The Java version of the implementation was eventually brought to an almost complete point.
+Also, in parallel with this thesis, a DART \cite{DART} based version of the required client for the protocol was being developed by Daniel Thomas.
 
-As a protocol, Nigori was envisioned out of the increasingly prevalent use of the cloud as a direct storage platform and the direct impact that has on the privacy of both users and their respective data.
+As a protocol, Nigori was envisioned out of the increasingly prevalent use of the cloud as a storage platform and the direct impact that has on the privacy of both users and their respective data.
 One the one hand, in such an environment, the cloud is one centralized entity for storing application specific data -- including potentially sensitive user data.
-Nevertheless, the actualy physical representation of the storage can be completely decentralized, to the extent of data lying in separate geographic regions.
+Nevertheless, the actual physical representation of the storage can be completely decentralized, to the extent of data lying in separate geographic regions.
 This raises questions of the security and integrity of data, if the respective servers get compromised.
 
 One the other hand, in parallel with the adoption of using cloud storage, the number of diferent types of clients accessing the respective data has also featured an increase in diversity.
 As such, we now have different native mobile OS applications, various traditional (PC/laptop) operating systems and their native applications, as well as various browser counterparts, all serving as clients, potentially sending data back into the cloud.
 In this context, being able to develop the core of a protocol once and have it compiled and used consistently and with strong guarantees across platforms, becomes a very strong incentive.
-What is more, Nigori was created assuming the diversity of clients, both generically, and particularly, with each individual user potentially having different devices, running the same applications, that would require both proper syncrhonization mechanisms and strong privacy of data.
+What is more, Nigori was created assuming the diversity of clients, both generically, and particularly, with each individual user potentially having different devices, running the same applications, that would require both proper syncrhonization mechanisms and strong data privacy guarantees.
 
 Thus, given both the volatility of the project development, coupled with the multi--platform requirements, Nigori was a perfect candidate for an implementation based off of a continuous development specification.
 
+Before we discuss the details of the specific requirements of both clients and servers, let us first describe the actual data format allowed and available for Nigori storage.
+This is highly important, as, clients that wish to put data into the store must understand how it is structured, where as the functionality that the servers (must) support is primarily dictated by this format.
+To begin with, every server can hold data for several users.
+Nevertheless, the data format for each individual user is the same.
+In effect, on a per user basis, Nigori acts as a generic two--level index--value store.
+Every user's stored data is a mapping from indices to their respective revision history -- since, as mentioned, for conflict resolution, all data is versioned.
+This history, in turn, is as well a mapping, from revision ID to the respective data.
+As such, when a client uploads data, it is added under a certain index and, under that, a specific revision ID.
+Understanding this storage format is important for functionality in both clients and servers.
+
+\subsection{Client}
 By using Nigori, applications must be aware of two major components: the local client and the remote server.
-The client is primarily responsible for properly encrypting the user data and ensuring communication with the server is done approprietely.
-What is more, the client also makes use of distributed version control primitives (TODO: git, papers?) in order to guarantee that content is properly syncronized across a user's different devices and potential conflicts are able to be properly mitigated.
+The client is mainly responsible with properly encrypting the user data and ensuring communication with the server is done approprietely.
+However, on top of this, the client must also make use of distributed version control primitives (TODO: git, papers?) in order to guarantee that content is properly syncronized across a user's different devices and potential conflicts are able to be properly mitigated.
 As such, the protocol becomes highly client--centric, placing the responsibility of both security and conflict resolution on the user end.
 Nevertheless, this is meant to increase the overall safety of the user data, as, removing control from the server, implicitly places control in the hands of the user (client).
 
-Since security is the primary responsibility of the client, most of the encryption requirements are placed on the application clients.
-As discussed in the specifications, the protocol requires a couple of primitives in order to function appropriately.
+With this need for control comes an inherent set of responsibilities.
+The client is thus focused highly on security, and as such, must make proper use of certain primitives, as described further -- and given in detail in the specification.
 \begin{description}
-  \item[SHA1] TODO
-  \item[HMAC] TODO
-  \item[PBKDF] TODO
-  \item[DSA] TODO
+  \item[\myref{SHA--1(M)}] is a secure hash function that generates a 160--bit message digest, as specified in RFC3174 \cite{RFC3174}, applied to message \myref{M}.
+  \item[\myref{HMAC(K, M)}] represents the hash--based message authentication code of message \myref{M}, using key \myref{K}, as specified in RFC2104 \cite{RFC2104}.
+  \item[\myref{PBKDF(PRF, P, S, C, dkLen)}] is the password based key derivation function, as specified in its respective RFC2898 \cite{RFC2898}, under \myref{PBKDF2}.
+  Here, \myref{PRF} represents a pseudo--random function -- \myref{SHA-1} for Nigori's case --, \myref{P} represents the given password, \myref{S} the salt, \myref{C} the number of iterations and \myref{dkLen}, the expected output length.
+  \item[\myref{DSA}] represents the Digital Signature Algorithm, as specified by the FIPS186 document \cite{DSA}.
+  For Nigori, we require generating the public and private key pairs, signing message content and verifying signatures afterwards.
+  The specification defines fixed parameters for obtaining a public key of size 3072 bits and a private key of 128 bits.
 \end{description}
 
-TODO: discuss client side crypto and the single password ideology
+TODO: describe Enc and EncDet here? and why the need for deterministic encryption
 
-TODO: introduce key derivations and password recovery techniques; this is the primary mechanism to guarantee the identity of the user
+Stemming from the security motivation comes another focus point for Nigori.
+As a protocol, it aims to help users by giving one centralized location for encrypted storage, with direct access through one single password -- a master password.
+As such, the system allows, through the use of the \myref{PBKDF} primitive, for keys to be derived from this master password.
+There are four keys the protocol requires, as defined in the specification:
+\begin{description}
+  \item[\myref{kuser}] is used for authenticating the user on the server; it is used in such a way as to not allow potential dictionary attacks against the user's master password.
+  \item[\myref{kenc}] is used for encrypting the user's secrets.
+  \item[\myref{kmac}] is used for generating the message authentication codes and implicitly authenticating the secrets.
+  \item[\myref{kiv}] is used to deterministically generate an initialization vector given a plaintext, thus preventing common prefix attacks, when using deterministic encryption.
+\end{description}
 
-TODO: talk about the four types of keys being derived: kuser, kenc, kmac, kiv
+For generating these above keys, the Nigori specification describes two methods, depending on how the system is setup.
+The first one is called unassisted key derivation and it only requires the user presenting his master password for authentication at the server.
+This has the drawback, however, that if the user forgets this password, all his data is subsequently lost, as there is no password recovery mechanism.
+The second method involves an indirection layer through a third party service that will use the user's password to derive the key that will ultimately be used for the actual authentication to the Nigori backend.
+As such, identity management is left to the third party, while the respective key to be used cannot be lost.
 
-TODO: talk about data encryption (key, revision, data)
+For the scope of this thesis, only the first method has been implemented.
+Since the four keys required are derived using \myref{PBKDF}, several parameters are needed.
+While the iteration counts and output lengths are fixed constants for each keys and the password is the user's master password, the salt is specifically created.
+It is generated by applying \myref{PBKDF} once again to a concatenation of the username and servername, as the password, with the remaining parameters as fixed known constants.
+This is done to add an extra difficulty step, by making it both user and server dependent.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
-TODO: The server, on the other hand, is solely responsible for properly authenticating connecting users and handling their requests.
+For actual data encryption, the same four previously mentioned keys are used, in combination with two extra primitives, denoted \myref{EncDet} and \myref{Enc}, which stand for deterministic and non--deterministic encryption of data, respectively.
+The difference in determinism comes from the use of an initialization vector, that is either random, or predetermined (\myref{kiv}), in an internal call to \myref{AES} \cite{AES}.
+Nigori uses \myref{AES} for this, as it is a symmetric--key algorithm, thus allowing for data to be both encrypted and decrypted, using the same key.
 
-TODO: discuss REST and rest interface; communication is primarily done via a RESTful interface
+TODO: describe what happens on put operations with index, revision, data...
 
-TODO: discuss messages; separate REST endpoints cover different functionality; each piece of functionality comes with its respective message
+\subsection{Server}
+The server is primarily responsible for two things: properly authenticating users and safely storing their respective data.
+However, to provide any type of functionality, the server must expose an interface, to allow communication.
+This is achieved through the shared use of a Representational State Transfer (REST) \cite{REST} style interface between the client and the server.
+The main idea behind such an interface involves a clear separation between client and server implementations and functional requirements.
+Moreover, it assumes that the communication can be completely stateless, without the server needing to keep any extra information, across requests.
+Thus, every new request made by a client must be fully self--contained.
+These are the primary requirements that are of interest to our server, in the context of this thesis.
 
-TODO: discuss encoding and serialization; the transmitted messages must be properly formated and understood by both server and client; Base64 encoding for content; JSON / protobuf for serialization
+As such, the server provides a set of endpoints (explicit URL paths, relative to the base host name), corresponding to the various pieces of functionality that it exposes to clients.
+Each endpoint expects a certain format of information, in order to properly do the functionality it promisses.
+The required format is abstracted away and described in the Nigori specification through the use of the actual protobuf \cite{protobuf} package that is used in the Java implementation.
+As such, a direct one--to--one mapping is established between the available endpoints and the messages that represent the expected payload format.
+Overall, the provided interface acts much like remote procedural calls, with each function (HTTP requests at a certain endpoint) expecting a certain format of parameters (the matching message).
 
-\section{Further Methodology}
+The various messages allowed in Nigori are primarily derived from the functionality that the server is expected to offer.
+Moreover, while all requests expect a certain message format, some also deliver responses back to the client, which in turn are also a message, in the aforementioned sense.
+As functionality goes, the messages are split into two main categories, as follows:
+\begin{description}
+  \item[User management] Since each server can keep track of data for multiple users, these messages are used for registering and unregistering users, as well as generic authentication.
+  \begin{description}
+    \item[Authenticate] The message must contain a hash of the user's DSA public key (for identifying the source), the servername (for identifying the destination), a one--time nonce, made of a timestamp and a random (four) byte string (to be checked for duplication, against replay attacks) and finally, the DSA signature of the entire message (to guarantee overall integrity).
+    \item[Register] The message should contain the public key the user wishes to be identified by and a token (default blank) to be used for any potential administrative rights the server may configure (such as space quotas, ACLs or otherwise).
+    \item[Unregister] The message must contain just an actual authentication message.
+    This way, the endpoint can properly validate the identity of the user requesting the command.
+  \end{description}
+  \item[User data] All commands that are related to the data of one specific user require authentication.
+  This is achieved by embedding an authentication message inside whichever message is required.
+  As such, though, the respective DSA signature must cover the entirety of the message, as to respect the integrity guarantees it is meant to offer.
+  Overall these commands are of three types:
+  \begin{description}
+    \item[Put] The main method of uploading content to a server.
+    Considering the data format, a client is required to provide an index, a revision and a value.
+    \item[Delete] The only method of modifying content already on the server is by removing it.
+    This may be done on an explicit basis, by providing both an index and a revision, or generically by providing the index alone, expecting to remove all the revision history underneath.
+    \item[Get] For accessing the data, there are multiple types of getter methods provided by the server.
+    For each of these expected getter messages, a corresponding message format for the response is expected by the client.
+    These getters are basically of three types:
+    \begin{description}
+      \item[Indices] These return all indices available for a specific user's data.
+      \item[Revisions] These return all available revision IDs under a specific index.
+      \item[Data] These return the actual data under a specific index.
+      It can either be the entirety of the revision history, or one specific instance, if the revision is provided.
+    \end{description}
+  \end{description}
+\end{description}
+
+The aforementioned message formats also requires one extra note.
+At the moment, the specification requires all communication to be done across HTTPS, to ensure a secure channel.
+Moreover, every request must be an HTTP POST request, with the payload (body) being the actual message.
+However, in order to communicate, the client and server must both understand the data they exchange.
+As such, this data must be serialized to a common format.
+The Nigori specification strongly favors protobufs, yet mandates that servers must at least provide JSON (TODO: mb cite?).
+What is more, since the data that is sent can be arbitrary byte strings, some form of encoding is also required.
+For this, Nigori mandates that all of the actual payload pieces must be encoded using Base64.
+
+\section{Further Methodology: Mirage and libOS}
 TODO: Bring in Mirage and libOS techniques. Explain how Mirage works. Describe needed library parts. Talk about how, using it, the core becomes stable and enforcing modularity. Make choice of OCaml concrete, as Mirage libraries are directly available.
 
 TODO: Support functional programming further, as choice for implementation. Bring support for OCaml and describe needed pieces for reader. Moreover, using supporting tools around the language, we can compile to different platforms from same core code -- native OCaml, JS for browser.
