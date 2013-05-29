@@ -5,10 +5,24 @@ Simplicity refers to the idea that a well design protocol will often be made up 
 
 Modularity, on the other hand, is supposed to complement simplicity. The concept implies that, in building a complex feature, it should require multiple smaller individual pieces. However, these should function as black boxes, assuming a well specified input and output: perfectly fine in isolation, to the extent that they can be both developed, maintained or replaced, accordingly, without affecting the integrity of the whole.
 
-\section{Fast Prototyping: Functional Programming}
-TODO: Considering the above, we've chosen to use functional programming throughout this project. Details about modularity, composition, type safety, verifyability.
+Overall, this section will highlight how the above two points, and other ideas on good protocol design, shaped the motivation and choices of this thesis.
 
-TODO: Talk about development funnel, many potentially formally verified components at the bottom (encryption?), narrow waist functional core implementation, broad spectrum of applications or target platforms through separate compilation. Potentially touch upon IP funnel.
+\section{Fast Prototyping: Functional Programming}
+In order to properly gauge the effectiveness of certain aspects of a protocol, the ability to prototype at a high rate is highly desirable.
+TODO: more...discuss modularity and composition?
+
+Another aspect of functional programming that is of great importance is the emphasis placed on the type system.
+On the one hand, it directly provides the developer with a safety net, to ensure that the theoretical design is not involuntarily broken during implementation.
+Thus, abstract specifications of data and interactions can be turned into concrete data types and functions acting on them, with the language itself helping with enforcement of constraints.
+On the other hand, an aspect for which functional programming languages are highly reveered is the ability to formally verify certain aspects of the code.
+As such, functional programming languages, combined with the above principles of simplicity and modularity, help put the problem of protocol design and implementation, into a development funnel style picture.
+At the bottom, we have the simple pieces of a protocol, properly specified and formally verified, guaranteed to offer the envisioned functionality.
+At the top, we have the bigger, composed pieces of a protocol, that stem from the modular design.
+The narrow waist, thus, becomes the actual language of choice.
+An alternative view of the same idea is obtained by considering the base primitives of a protocol as the funnel base, the main core of the protocol, combining all the primitives into the main features, to represent the narrow waist, and finally, the broad spectrum of final deployments of the protocol, on various platorms, to be the funnel top.
+The latter can be achieved, through a functional language that allows for separate compilation towards targetting different platforms.
+
+TODO: add picture.
 
 TODO: Iterative design, Spiral Model of software development. Experiment with a \wip protocol. Decide to work on an implementation from scratch, while specification is still under development, as this would explicitly give the required context.
 
