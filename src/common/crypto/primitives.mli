@@ -5,6 +5,7 @@ end
 module InitializationVector : sig
   type t
   exception InvalidVectorSize
+  val valid_size : int
   val create : string -> t
   val create_random : unit -> t
   val to_string : t -> string
@@ -31,6 +32,7 @@ module HMAC : sig
   type t
   type key = string
   type message = string
+  val valid_size : int
   val apply : key -> message -> t
   val to_string : t -> string
 end
@@ -45,15 +47,6 @@ module PBKDF2 : sig
 
   val f : password -> salt -> count -> dk_length -> string
   val apply : password -> salt -> count -> dk_length -> t
-  val to_string : t -> string
-end
-
-module Enc : sig
-  type t
-  type key = string
-  type plaintext = string
-  val enc : key -> key -> plaintext -> t
-  val enc_det: key -> key -> key -> plaintext -> t
   val to_string : t -> string
 end
 

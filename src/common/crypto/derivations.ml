@@ -1,62 +1,120 @@
-module P = Primitives.PBKDF2
-module Enc = Primitives.Enc
+open Primitives
+
+module P = PBKDF2
 module C = Constants
 
 module UnassistedKeys : Derivations_abstract.Keys = struct
+  exception InvalidMessageLength
+  exception InvalidHmac
   type t = {
     username : string;
     password : string;
     servername : string;
     salt : string;
+    kuser : P.t;
+    kenc : P.t;
+    kmac : P.t;
+    kiv : P.t;
   }
 
   let create ~username ~password ~servername =
     let user_and_server = Utils.encode_length [username; servername;] in
-    let s_user = P.apply user_and_server C.user_salt C.n_salt C.b_s_user in
+    let s_user =
+      P.(to_string (apply
+        user_and_server
+        C.user_salt
+        C.n_salt
+        C.b_s_user
+      )) in
     {
       username = username;
       password = password;
       servername = servername;
-      salt = P.to_string s_user;
+      salt = s_user;
+      kuser = P.apply password s_user C.n_user C.b_k_dsa;
+      kenc = P.apply password s_user C.n_enc C.b_k_enc;
+      kmac = P.apply password s_user C.n_mac C.b_k_mac;
+      kiv = P.apply password s_user C.n_iv C.b_k_iv;
     }
 
-  type k_user = P.t
-  type k_enc = P.t
-  type k_mac = P.t
-  type k_iv = P.t
+  let make_packet iv cypher hmac =
+    Utils.concat [
+      (InitializationVector.to_string iv);
+      (AES256.to_string cypher);
+      (HMAC.to_string hmac);
+    ]
 
-  let generate_k_user keys = P.apply keys.password keys.salt C.n_user C.b_k_dsa
-  let to_string_k_user k_user = P.to_string k_user
+  let xor_hmac input =
+    let iv_size = InitializationVector.valid_size in
+    let rec split_str str =
+      let len = String.length str in
+      if len <= iv_size
+      then
+        let zeroes_len = iv_size - len in
+        let zeroes = String.make zeroes_len (char_of_int 0) in
+        [str ^ zeroes]
+      else
+        let piece = String.sub str 0 iv_size in
+        let rest = String.sub str iv_size (len - iv_size) in
+        piece :: (split_str rest)
+    in
+    let pieces = split_str input in
+    Utils.xor pieces
 
-  let generate_k_enc keys = P.apply keys.password keys.salt C.n_enc C.b_k_enc
-  let to_string_k_enc k_enc = P.to_string k_enc
+  let make_iv_from_plaintext ~manager ~plaintext =
+    let kiv = P.to_string manager.kiv in
+    let hmac = HMAC.apply kiv plaintext in
+    let xor_iv = xor_hmac (HMAC.to_string hmac) in
+    InitializationVector.create xor_iv
 
-  let generate_k_mac keys = P.apply keys.password keys.salt C.n_mac C.b_k_mac
-  let to_string_k_mac k_mac = P.to_string k_mac
+  let encrypt ~manager ~plaintext ?(random_iv=true) () =
+    let iv =
+      if random_iv
+      then
+        InitializationVector.create_random ()
+      else
+        make_iv_from_plaintext ~manager ~plaintext
+    in
+    let kenc = P.to_string manager.kenc in
+    let kmac = P.to_string manager.kmac in
+    let cypher = AES256.encrypt iv kenc plaintext in
+    let hmac = HMAC.apply kmac (AES256.to_string cypher) in
+    make_packet iv cypher hmac
 
-  let generate_k_iv keys = P.apply keys.password keys.salt C.n_iv C.b_k_iv
-  let to_string_k_iv k_iv = P.to_string k_iv
+  let decrypt ~manager ~cypher =
+    let len = String.length cypher in
+    let iv_size = InitializationVector.valid_size in
+    let hmac_size = HMAC.valid_size in
+    let min_size = iv_size + hmac_size in
+    if len <= min_size
+    then
+      raise InvalidMessageLength
+    else
+      let kmac = P.to_string manager.kmac in
+      let kenc = P.to_string manager.kenc in
+      let cypher_size = len - min_size in
+      let iv = InitializationVector.create (String.sub cypher 0 iv_size) in
+      let data = String.sub cypher iv_size cypher_size in
+      let hmac_str = String.sub cypher (iv_size + cypher_size) hmac_size in
+      let hmac = HMAC.apply kmac data in
+      if String.compare hmac_str (HMAC.to_string hmac) == 0
+      then
+        AES256.decrypt iv kenc data
+      else
+        raise InvalidHmac
 
-  let enc_index keys plaintext =
-    Enc.(to_string (enc_det
-      (to_string_k_enc (generate_k_enc keys))
-      (to_string_k_mac (generate_k_mac keys))
-      (to_string_k_iv (generate_k_iv keys))
-      plaintext
-    ))
+  let enc_index ~manager ~plaintext =
+    encrypt ~manager ~plaintext ()
+  let dec_index ~manager ~cypher =
+    decrypt ~manager ~cypher
 
-  let enc_revision keys plaintext =
-    Enc.(to_string (enc_det
-      (to_string_k_enc (generate_k_enc keys))
-      (to_string_k_mac (generate_k_mac keys))
-      (to_string_k_iv (generate_k_iv keys))
-      plaintext
-    ))
+  let enc_revision ~manager ~plaintext =
+    encrypt ~manager ~plaintext ()
+  let dec_revision ~manager ~cypher =
+    decrypt ~manager ~cypher
 
-  let enc_value keys plaintext =
-    Enc.(to_string (enc
-      (to_string_k_enc (generate_k_enc keys))
-      (to_string_k_mac (generate_k_mac keys))
-      plaintext
-    ))
+  let enc_value ~manager ~plaintext =
+    encrypt ~manager ~plaintext ~random_iv:false ()
+  let dec_value ~manager ~cypher =
+    decrypt ~manager ~cypher
 end

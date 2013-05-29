@@ -136,3 +136,15 @@ Executable test_nonce
 Test test_nonce
   Run:                true
   Command:            $test_nonce
+
+Executable test_derivations
+  Path:               test/
+  MainIs:             test_derivations.ml
+  BuildDepends:       lib_crypto,
+                      lib_test,
+                      oUnit
+  Install:            false
+
+Test test_derivations
+  Run:                true
+  Command:            $test_derivations

@@ -11,15 +11,15 @@ end
 module InitializationVector = struct
   type t = string
   exception InvalidVectorSize
-  let valid_vector_size = 16 (* Taken from C. *)
+  let valid_size = 16 (* Taken from C. *)
 
   let create value =
-    if String.length value != valid_vector_size
+    if String.length value != valid_size
     then raise InvalidVectorSize
     else value
 
   let create_random () =
-    create (Random.generate valid_vector_size)
+    create (Random.generate valid_size)
 
   let to_string message = message
 end
@@ -73,6 +73,7 @@ module HMAC = struct
   type t = string
   type key = string
   type message = string
+  let valid_size = 20 (* Taken from C. *)
   let apply key message = C.(hash_string (MAC.hmac_sha1 key) message)
   let to_string message = message
 end
@@ -112,7 +113,7 @@ module PBKDF2 = struct
     let f_result = f password salt count current_step in
     if current_step >= steps
     then
-      (String.sub f_result ((steps - 1) * hash_length) last_length) :: result
+      (String.sub f_result 0 last_length) :: result
     else
       let next = f_result :: result in
         t_compute password salt count (current_step + 1) steps last_length next
@@ -125,33 +126,6 @@ module PBKDF2 = struct
       let r = dk_length - (l - 1) * hash_length in
       let pieces = t_compute password salt count 1 l r [] in
       Utils.concat pieces
-
-  let to_string message = message
-end
-
-module Enc = struct
-  type t = string
-  type key = string
-  type plaintext = string
-
-  let create : InitializationVector.t -> AES256.t -> HMAC.t -> t =
-    fun iv cipher hmac -> Utils.concat [iv; cipher; hmac]
-
-  let enc key1 key2 plaintext =
-    let iv = InitializationVector.create_random () in
-    let cipher = AES256.encrypt iv key1 plaintext in
-    let hmac = HMAC.apply key2 cipher in
-    create iv cipher hmac
-
-  let enc_det key1 key2 key3 plaintext =
-    let temp = HMAC.apply key3 plaintext in
-    let half = (String.length temp) / 2 in
-    let f1 = String.sub temp 0 half in
-    let f2 = String.sub temp half half in
-    let g = Utils.xor [f1; f2] in
-    let cipher = AES256.encrypt g key1 plaintext in
-    let hmac = HMAC.apply key2 cipher in
-    create g cipher hmac
 
   let to_string message = message
 end
@@ -446,17 +420,18 @@ module DSA = struct
       (bytes_of_zt group.base)
       (Utils.to_hex (bytes_of_zt key))
 
-  (* TODO: use default_group!
   let nigori_new_key () =
     let keys = new_key "" in
     let pub_key, priv_key = keys in
-    print_key pub_key;
+    (* print_key pub_key; *)
     keys
-  *)
+
+  (* TODO: use default_group!
   let nigori_new_key () =
     let keys = new_key ~grp_info:default_group "" in
     Printf.eprintf "DEF-P: %s\n" ((bytes_of_zt default_group.p));
     let pub_key, priv_key = keys in
     print_key pub_key;
     keys
+  *)
 end

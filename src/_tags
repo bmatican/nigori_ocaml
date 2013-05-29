@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 8675f8d0986cb1bef0bc5cf32bd7e9e1)
+# DO NOT EDIT (digest: faaf842f812787323f0efafb2416498b)
 # Ignore VCS directories, you can use the same kind of rule outside 
 # OASIS_START/STOP if you want to exclude directories that contains 
 # useless stuff for the build process
@@ -162,20 +162,30 @@
 "test/test_nonce.byte": pkg_yojson
 "test/test_nonce.byte": pkg_cryptokit
 "test/test_nonce.byte": pkg_gmp
-<test/*.ml{,i}>: use_lib_test
 <test/*.ml{,i}>: use_lib_server
-<test/*.ml{,i}>: use_lib_common
-<test/*.ml{,i}>: use_lib_crypto
-<test/*.ml{,i}>: pkg_oUnit
 <test/*.ml{,i}>: pkg_lwt.unix
 <test/*.ml{,i}>: pkg_lwt
 <test/*.ml{,i}>: pkg_lwt.syntax
-<test/*.ml{,i}>: pkg_cohttp
 <test/*.ml{,i}>: pkg_cohttp.lwt
 <test/*.ml{,i}>: pkg_dyntype
 <test/*.ml{,i}>: pkg_sqlite3
 <test/*.ml{,i}>: pkg_orm
 <test/*.ml{,i}>: pkg_orm.syntax
+# Executable test_derivations
+"test/test_derivations.byte": use_lib_test
+"test/test_derivations.byte": use_lib_common
+"test/test_derivations.byte": use_lib_crypto
+"test/test_derivations.byte": pkg_oUnit
+"test/test_derivations.byte": pkg_cohttp
+"test/test_derivations.byte": pkg_atdgen
+"test/test_derivations.byte": pkg_yojson
+"test/test_derivations.byte": pkg_cryptokit
+"test/test_derivations.byte": pkg_gmp
+<test/*.ml{,i}>: use_lib_test
+<test/*.ml{,i}>: use_lib_common
+<test/*.ml{,i}>: use_lib_crypto
+<test/*.ml{,i}>: pkg_oUnit
+<test/*.ml{,i}>: pkg_cohttp
 <test/*.ml{,i}>: pkg_atdgen
 <test/*.ml{,i}>: pkg_yojson
 <test/*.ml{,i}>: pkg_cryptokit
