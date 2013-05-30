@@ -5,6 +5,32 @@ open Cohttp_lwt_unix
 *)
 module CL = Client_base.Client
 
+exception InvalidBatchNumbering
+
+let fill_string prefix number total =
+  let number_str = string_of_int number in
+  let diff = total - (String.length prefix) + (String.length number_str) in
+  if diff < 0
+  then
+    raise InvalidBatchNumbering
+  else
+    let zeroes = String.make diff '0' in
+    prefix ^ zeroes ^ number_str
+
+let batch client number =
+  let t_register = (CL.register client ~print:false "register") in
+  let do_tests = fun _ -> begin
+    let index = "test-index" in
+    let total_size = 15 in
+    for i = 1 to number do
+      let revision = fill_string "test-rev-" i total_size in
+      let value = fill_string "test-val-" i total_size in
+      CL.put client index revision value ~print:false "put"
+    done;
+    exit 0
+  end in
+  bind t_register do_tests
+
 let choice () =
   let address = Config.host_address in
   let port = Config.host_port in
@@ -17,7 +43,7 @@ let choice () =
 
   if Array.length Sys.argv <= 1
   then begin
-    Printf.printf "Must supply an argument\n";
+    Printf.eprintf "Must supply an argument\n";
     exit 1
   end
   else begin
@@ -101,6 +127,18 @@ let choice () =
         let rev = Sys.argv.(3) in
         let value = Sys.argv.(4) in
         CL.put client index rev value endpoint
+      end
+    end
+    | "batch" -> begin
+      if Array.length Sys.argv != 3
+      then begin
+        Printf.eprintf "usage: %s number\n" endpoint;
+        exit 1
+      end
+      else begin
+        let number = int_of_string (Sys.argv.(2)) in
+        Printf.eprintf "Got request for %d PUTs\n" number;
+        batch client number
       end
     end
     | x -> begin

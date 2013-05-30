@@ -39,7 +39,7 @@ module Client = struct
 
   let print_response ~decode t = match_lwt t with
     | None ->
-        Printf.printf "Got no response back!\n"; exit 1
+        Printf.printf "Got no response back!\n"; return ()
     | Some x ->
         let response = fst x in
         let body = snd x in
@@ -49,16 +49,22 @@ module Client = struct
           then decode body
           else body
         in
-        Printf.printf "Got response back: %s\n" printing;
-        exit 0
+        Printf.printf "Got response back: %s\n" printing; return ()
 
-  let post client message ?(decode=(fun x -> x)) endpoint =
-    print_response
-      ~decode
-      (Cohttp_client.post
-        ?body:(Body.body_of_string message)
+  let do_post body url =
+    Cohttp_client.post ?body url
+
+  let post client message ?(decode=(fun x -> x)) ?(print=true) endpoint =
+    let action =
+      do_post
+        (Body.body_of_string message)
         (url client endpoint)
-      )
+    in
+    if print
+    then
+      print_response ~decode action
+    else
+      return ()
 
   let authenticate client =
     let request =
