@@ -32,7 +32,8 @@ Library lib_common
   Install:            false
 
 Library lib_client
-  Modules:            Client_unix
+  Modules:            Client_base,
+                      Client_unix
   BuildDepends:       lib_common,
                       lib_crypto,
                       lwt.unix,
