@@ -2,7 +2,7 @@ type authenticate_request = {
   public_key : string;
   sig : string;
   nonce : string;
-  server_name : string;
+  servername : string;
 } <ocaml field_prefix="auth_request_">
 
 type register_request = {

@@ -3,6 +3,7 @@ open Cohttp
 open Cohttp_lwt_unix
 
 open Messages
+open Messages.Factory
 open Messages_t
 open Messages_j
 open Primitives
@@ -108,7 +109,7 @@ module Make (DB : Database.DB) = struct
               let dsa_s = List.nth split_signature 1 in
               let signed = (dsa_r, dsa_s) in
 
-              Primitives.DSA.print_key pub_key;
+              (* Primitives.DSA.print_key pub_key; *)
               let ret = Primitives.DSA.verify message_to_check signed pub_key in
               if not ret
               then Generic.unauthorized ~msg:"Invalid signature" ()

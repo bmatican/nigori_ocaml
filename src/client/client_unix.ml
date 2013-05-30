@@ -6,17 +6,18 @@ open Primitives
 open Messages_j
 open Messages_t
 open Messages
+open Messages.Factory
 
 let address = Config.host_address
 let port = Config.host_port
 
-let url endpoint = 
+let url endpoint =
   Uri.of_string (Printf.sprintf "http://%s:%d/%s" address port endpoint)
 
 let print_response ~decode t = match_lwt t with
-  | None -> 
+  | None ->
       Printf.printf "Got no response back!\n"; exit 1
-  | Some x -> 
+  | Some x ->
       let response = fst x in
       let body = snd x in
       lwt body = Body.string_of_body body in
@@ -28,88 +29,91 @@ let print_response ~decode t = match_lwt t with
       Printf.printf "Got response back: %s\n" printing;
       exit 0
 
-let post message ?(decode=(fun x -> x)) endpoint = 
+let post message ?(decode=(fun x -> x)) endpoint =
   print_response ~decode (Client.post ?body:(Body.body_of_string message) (url endpoint))
 
 let keys = DSA.nigori_new_key ()
-let pub_key, priv_key = keys
-let server_name = "server_name"
+let username = "username"
+let password = "password"
+let servername = "servername"
+let manager = Derivations.UnassistedKeys.create ~username ~password ~servername
+let factory = Factory.create keys manager
 
 let authenticate =
-  let request = 
-    encode_auth_request 
-      (make_auth_request keys server_name) 
+  let request =
+    encode_auth_request
+      (make_auth_request factory)
   in
   let message = string_of_authenticate_request request in
   post message
 
 let register =
-  let request = 
-    encode_register_request 
-      (make_register_request pub_key ()) 
+  let request =
+    encode_register_request
+      (make_register_request factory ())
   in
   let message = string_of_register_request request in
   post message
 
 let unregister =
-  let request = 
-    encode_unregister_request 
-      (make_unregister_request keys server_name)
+  let request =
+    encode_unregister_request
+      (make_unregister_request factory)
   in
   let message = string_of_unregister_request request in
   post message
 
-let decode_get_indices message = 
+let decode_get_indices message =
   let response = get_indices_response_of_string message in
-  let decoded = decode_get_indices_response response in
+  let decoded = decode_get_indices_response factory response in
   string_of_get_indices_response decoded
 
 let get_indices =
   let request = encode_get_indices_request
-    (make_get_indices_request keys server_name)
+    (make_get_indices_request factory)
   in
   let message = string_of_get_indices_request request in
   post message
 
 let decode_get_revisions message =
   let response = get_revisions_response_of_string message in
-  let decoded = decode_get_revisions_response response in
+  let decoded = decode_get_revisions_response factory response in
   string_of_get_revisions_response decoded
 
 let get_revisions index =
   let request = encode_get_revisions_request
-    (make_get_revisions_request keys server_name index)
+    (make_get_revisions_request factory index)
   in
   let message = string_of_get_revisions_request request in
   post message
 
 let put index rev value =
   let request = encode_put_request
-    (make_put_request keys server_name index rev value)
+    (make_put_request factory index rev value)
   in
   let message = string_of_put_request request in
   post message
 
 let delete key ?(revision=None) =
   let request = encode_delete_request
-    (make_delete_request keys server_name key ~revision ())
+    (make_delete_request factory key ~revision ())
   in
   let message = string_of_delete_request request in
   post message
 
 let decode_get message =
   let response = get_response_of_string message in
-  let decoded = decode_get_response response in
+  let decoded = decode_get_response factory response in
   string_of_get_response decoded
 
 let get key ?(revision=None) =
   let request = encode_get_request
-    (make_get_request keys server_name key ~revision ())
+    (make_get_request factory key ~revision ())
   in
   let message = string_of_get_request request in
   post message
 
-let choice () = 
+let choice () =
   if Array.length Sys.argv <= 1
   then begin
     Printf.printf "Must supply an argument\n";
@@ -128,7 +132,7 @@ let choice () =
       unregister endpoint
     end
     | "get-indices" -> begin
-      get_indices 
+      get_indices
         ~decode:decode_get_indices
         endpoint
     end
@@ -167,7 +171,7 @@ let choice () =
       end
       else begin
         let key = Sys.argv.(2) in
-        let revision = 
+        let revision =
           if Array.length Sys.argv == 3
           then None
           else Some (Sys.argv.(3))

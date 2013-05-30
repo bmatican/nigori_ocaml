@@ -208,6 +208,8 @@ module DB = struct
           then false
           else begin
             Hashtbl.remove revs rev;
+            if Hashtbl.length revs == 0
+            then Hashtbl.remove s key;
             true
           end
         end

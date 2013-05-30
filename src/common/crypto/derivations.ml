@@ -17,6 +17,10 @@ module UnassistedKeys : Derivations_abstract.Keys = struct
     kiv : P.t;
   }
 
+  let get_username ~manager = manager.username
+  let get_password ~manager = manager.password
+  let get_servername ~manager = manager.servername
+
   let create ~username ~password ~servername =
     let user_and_server = Utils.encode_length [username; servername;] in
     let s_user =
@@ -67,7 +71,7 @@ module UnassistedKeys : Derivations_abstract.Keys = struct
     let xor_iv = xor_hmac (HMAC.to_string hmac) in
     InitializationVector.create xor_iv
 
-  let encrypt ~manager ~plaintext ?(random_iv=true) () =
+  let encrypt ~manager ~plaintext ?(random_iv=false) () =
     let iv =
       if random_iv
       then
@@ -114,7 +118,7 @@ module UnassistedKeys : Derivations_abstract.Keys = struct
     decrypt ~manager ~cypher
 
   let enc_value ~manager ~plaintext =
-    encrypt ~manager ~plaintext ~random_iv:false ()
+    encrypt ~manager ~plaintext ~random_iv:true ()
   let dec_value ~manager ~cypher =
     decrypt ~manager ~cypher
 end
