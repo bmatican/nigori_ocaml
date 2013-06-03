@@ -5,23 +5,75 @@ These are both actual modifications brought back onto the protocol specification
 On the other hand, we also show the results of a practical analysis of the performance of the obtained implementation.
 
 \section{Theoretical}
-TODO: discuss what was contributed to the tools, systems and RFC.
+\subsection{Nigori Protocol}
+As expected, working with a \wip protocol is a highly iterative task.
+What is more, there are many aspects that show themselves as potential areas of change.
+One of the main such areas was overall protocol specificity.
+Initially, while going through the RFC, in an attempt to understand the protocol and try to implement pieces of it, in a bottom--up approach, there were plenty of parts of the protocol's working that were either underspecified or poorly done so.
+The most explicit of them was the cryptography part.
+Many of the primitives required by Nigori, and particularly the exact ways in which they were to be used or combined, was presented in a difficult to interpret format.
+The exact working of \myref{PBKDF} was left completelty to its supporting RFC.
+The description for the deterministic version of content encryption, \myref{EncDet}, was slightly misleading, in the sense that internally, it uses an \myref{HMAC} and then shirnks that to the fixed size of an \myref{AES} initialization vector, by splitting up the \myref{HMAC} into pieces of the requires size and applying xor among all of them, which was not directly apparent from the specification.
+Finally, the matching decryption primitives, both deterministically and not, are completely missing.
 
-TODO: Iterative process: discuss about modifications brought back to the RFC for various reasons (clarity, insufficient information, erroneous pieces); show improvements brought forward toward the further development of the RFC (SSH like handshake for deciding encryption mechanics, fixed set of DSA parameters...)
+On a different note, in light of the implementation work, one aspect of the protocol became aparent and feedback and changes were brought to it to accommodate: the imposed strictness.
+One aspect was that the protocol demanded all communication be done over HTTPS, with servers having valid certificates.
+In our implementation, however, we have bypassed this requirement, in an attempt to make the server a proof of concept implementation.
+The working of the protocol stays the same, nonetheless, just that the overall security of the data being transmitted now becomes succeptible to third party interceptions.
+However, since no critical data is ever sent in plaintext, this is not a serious concern.
+Another area where the specification is rigitd is with regards to which cryptography parts are being used.
+For example, in our OCaml implementation, access to a proper, fully-working version of DSA, with support for key sized of up to the required 3072, was restricted.
+As such, instead of mandating DSA, having some mechanism to negotiate the protocol to be used, for example, for the signing of the content, could have been useful.
+Such a mechanism already is in place for determining the serialization formats that both client and server can and should use.
+What is more, the Nigori specification also mandates the use of DSA with fixed internal parameters, that could be shared among the client and server libraries.
+While this is done for obvious security reasons, as choosing these parameters affects the strength of the algorithm, this nevertheless drastically reduces the options available, if, for some reason, this is not available on a targeted platform, such as our base OCaml implementation.
+
+\subsection{Mirage and OCaml Environment}
+As initially expected and desired, the systems and toolchains we were working with were not fully production ready.
+As such, many of them, on occasion, presented less than optimal behaviour.
+Overall, in light of our work, much feedback was brought to the various pieces in the Mirage and OCaml ecosystem which were used.
+The most important parts are highlighted here.
+
+As such, while the \myref{ocaml-cohttp} library provided very mature and stable support for the required HTTP functionality, less could be said about the respective SQLite implementation of the storage layer, as previously mentioned in Section \ref{sec:implementation:sql}. TODO: reiterate
+
+Also, while arguably not directly related to Mirage, the respective library used for JSON serialization could have also used some improvements.
+Primarily, the library offered the ability to annotate the ATDs with extra information that would be used in either the JSON form, or the OCaml form.
+Some mechanism, such as pre and post serialization and deserialization hooks, could have helped a great deal with semi-automating the development process of the message formats.
+
+TODO: some discussion about \myref{js\_of\_ocaml}.
 
 \section{Practical}
-TODO: discuss setting for tests
-
-TODO: discuss choice of what to test
+For performance analysis, we decided we would primarily investigate two aspects of the system.
+On the one hand, we would analyze the overall storage footprint and how this evolves with both number of items, as well as respective size of the individual items.
+On the other hand, it would also be interesting to analyze the overall latency of crucial operations within the system, such as \myref{/get} and \myref{/put} calls.
 
 \subsection{Storage}
-TODO: discuss extra settings, discuss choices of keys and such
+In order to properly test the overall behaviour of the Nigori server and how much storage it consumes, we decided to analyze the persistent version of the server implementation, the one using SQLite.
+To do so appropriately, we filled the data store via \myref{/put} operations on the server.
+We varied both the total number of items to keep at any given time in the store, from 1 to 100000, by factors of ten, while also varying the individual items being saved as well.
+Since an item is defined by three components, an index, a revision and the actual data, we decided to fix two of these, the index and the revision, to some pre-determined size (20 bytes), as these should in a sense be metadata, and vary the size of the actual data.
+Thus, we go from 100 bytes of data, increntally, by a factor of two, up to 1600 bytes of data.
 
-TODO: talk about results, interpret, hypothesis, expectations...
+We decided to start from a relatively low value, such that we have some potential interference between the index and revision sizes, which were fixed to small values.
+However, when encrypted through either \myref{Enc} or \myref{EncDet}, the sizes of each piece become significantly larger, as each becomes a contatenation of an \myref{AES} initialization vector, of 16 bytes, an actual \myref{AES} cypher text, which is padded to 16 bytes, and a respective HMAC of the cyper, bringing in about an extra 20 bytes.
+
+TODO: add back of the hand calculation based on the above
+
+TODO: add graph
+
+TODO: talk about results, interpret, hypothesis, expectations compared with calculations, potentially include a much bigger set of keys to show that trend eventually evens out.
 
 \subsection{Latency}
-TODO: setting
+This part of the analysis makes use of the data stores previously generated in the storage analysis, as those offer us content at various fill rates.
+As such, the evaluation is two fold.
+On the one hand, a direct latency analysis on \myref{/put} or \myref{/get} operations, on the various sizes of the data stores provides input on how the time of these operations varies depending on the server load.
+However, an interesting aspect to consider is that, since most of these operations rely heavily on the client-side encryption, a lot of time will be spent there.
+Thus, on the other hand, an interesting aspect to look at is the breakdown of request times.
+Every request can therefore be split into three major time components: time spent on the client side (before sending the request and while processing the response), time spent on the medium of travel (to and from the server and in the internals of the HTTP library) and finally time spent on the server (unpacking the request, executing against the database, packing the response).
+All of these times and their individual components can be carefully measured and in large, they are all important.
 
-TODO: each individual test alone
+TOOD: the respective experiments
+
+TODO: add graphs
 
 TODO: talk about results, interpret, hypothesis, expectations...

@@ -276,6 +276,7 @@ As such, we also include a discussion on these elements in what follows:
   While the \myref{Nonce} module allows for serializing instances to strings, OCaml does not provide a default \myref{Set} with O(1) access time.
   In absence of such, we store nonces, on a per user basis into yet another \myref{Hashtbl}, indexed from actual \myref{Nonce} instances to boolean values.
 
+  \label{sec:implementation:sql}
   \item[SQL] TODO: Quirks, problems and limitations.
 \end{description}
 
