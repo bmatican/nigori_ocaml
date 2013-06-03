@@ -4,26 +4,26 @@ As such, the big picture consists of primarily two components: a client and a se
 Nevertheless, due to the nature of the interactions between these two pieces, quite a sizeable chunk of code ends up being shared, particularly the communication and some of the encryption mechanics.
 This chapter is modeled after the actual implementation, showing the shared code, and the client and the server in separation, while also discussing the interactions between them.
 
-In adition to describing the base OCaml implementation, this chapter also provides details about the testing done to ensure the application performs according to specifications.
+In addition to describing the base OCaml implementation, this chapter also provides details about the testing done to ensure the application performs according to specifications.
 Lastly, the separate compilation from OCaml code to JavaScript is also detailed, along with both what it requires as well as what it entails.
 
 TODO: potentially add a figure or set of figures showing module dependencies and individual pieces, to help with direct naming.
 
 \section{Shared}
-The coresponding section of the codebase for shared code actually represents the core of the application.
+The corresponding section of the codebase for shared code actually represents the core of the application.
 For the most part, components in this category are used by both the server and the client.
 As such, they have been implemented according to the simplicity and modularity principles mentioned in the previous chapter.
 Implicitly, this made using this core in both client and server, a straightforward venture.
-Moreover, it also allowed for an easy prototyping of the javascript version of the client, as well, since the core functionality was merely functorized to match the targetted platform.
+Moreover, it also allowed for an easy prototyping of the javascript version of the client, as well, since the core functionality was merely functorized to match the targeted platform.
 
 \subsection{Crypto}
 As listed in the initial draft for Nigori, several cryptographic functions are required for the operation of the protocol.
-These functions were built on top of the \myref{cryptokit} library for OCaml and abstracted into their individulal modules, each capable of providing the expected functionality as well as being tested or verified accordingly.
+These functions were built on top of the \myref{cryptokit} library for OCaml and abstracted into their individual modules, each capable of providing the expected functionality as well as being tested or verified accordingly.
 
 As such, we had several base primitives that were required such as \myref{SHA-1}, \myref{HMAC}, \myref{AES}, \myref{DSA} and \myref{PBKDF}.
 We use \myref{SHA-1} for hashing purposes, both implicitly (such as in \myref{PBKDF}), but also explicitly (for example, on \myref{DSA} keys in messages).
 \myref{HMAC} is used solely on the encryption and decryption steps of indices, revisions or actual data.
-Similary, \myref{DSA} is used primarily for authentication.
+Similarly, \myref{DSA} is used primarily for authentication.
 In the client, we create the public / private key pairs for a particular user.
 Afterwards, we generate and introduce a message signature, inside packets that are or contain an authentication message themselves.
 Finally, on the server, the signature is verified, accordingly, using the user's public key, that is stored as part of his identity.
@@ -100,12 +100,12 @@ On the request handler side, every request at a valid endpoint is checked to be 
 If all is proper, the request body is unpacked.
 First the raw data is deserialized (at the moment, from JSON format).
 Then, the content is decoded from Base64.
-Afterwards, if authentification is required, the package signature is checked using DSA.
+Afterwards, if authentication is required, the package signature is checked using DSA.
 Finally, if all these implicit message related checks are passed, the request is ultimately turned into a direct command to the underlying database.
 
 TODO: figure with data flow
 
-There is an almost one--to--one corelation between the endpoints, the communication messages and the storage system commands.
+There is an almost one--to--one correlation between the endpoints, the communication messages and the storage system commands.
 However, there is something to be said individually about endpoints and the respective responses they can generate.
 Below you will find a table of all HTTP response status codes that the server will generate, followed by the correlation between actions and potential responses.
 
@@ -137,10 +137,10 @@ For the endpoints that would get back information, such as \myref{get}, \myref{g
 
 For the \myref{register} endpoint, there is an \myref{HTTP 401} in case of invalid DSA key data, or an \myref{HTTP 409} for trying to register a user with an already registered public key.
 
-Finally for the \myref{unregister} and \myref{put} endpoints, the special response is an \myref{HTTP 500} in case of internal failure, after users have been properly authenticated, as that should not be posible.
+Finally for the \myref{unregister} and \myref{put} endpoints, the special response is an \myref{HTTP 500} in case of internal failure, after users have been properly authenticated, as that should not be possible.
 
 \subsection{Storage}
-As far as storage was concearned, the server has several requirements.
+As far as storage was concerned, the server has several requirements.
 On the one hand, the server needs to hold both explicit user data, as well as certain pieces of metadata, for security purposes.
 For example, nonce and timestamp data is recorded in the system, on a per user basis, to prevent potential replay attacks.
 This goes in line with the requirements of the specification.
@@ -169,8 +169,8 @@ As far as functionality goes, the database module signature is split into four s
   \begin{itemize}
   \item \myref{val add\_user : database:t -> pub\_key:User.public\_key -> pub\_hash:User.hash -> bool} \\
   In order to even begin holding user data, the server must first register the respective user(s).
-  This function acomplishes exactly that.
-  It receives the public key the user whishes to be authenticated with, \myref{pub\_key:User.public\_key}, as well as a hash of that respective key, \myref{pub\_hash:User.hash}.
+  This function accomplishes exactly that.
+  It receives the public key the user wishes to be authenticated with, \myref{pub\_key:User.public\_key}, as well as a hash of that respective key, \myref{pub\_hash:User.hash}.
   This data would then be stored internally, for later lookup.
   Since the hash is used in messages instead of the actual key (for space efficiency reasons), we implicitly take the liberty us using this hash as the main keying factor across the storage.
   This is, however, an implementation decision, which can potentially affect security, yet, since the protocol specification considers this enough for message transmission, the server can easily make the same assumptions.
@@ -198,13 +198,13 @@ As far as functionality goes, the database module signature is split into four s
   The function returns appropriately \myresult{true} if the user exists and \myresult{false} otherwise.
 
   \item \myref{val delete\_user : database:t -> user:User.t -> bool} \\
-  This function servers as the oposite of the \myref{add\_user} one.
+  This function servers as the opposite of the \myref{add\_user} one.
   It will effectively deregister the respective user from the server.
   Moreover, all of his respective data should also be deleted at this time, as well.
 
   An important note is that this function receives a \myref{user:User.t} as a parameter.
   This is a design choice that should server as an extra level of internal security.
-  Since this should be a rare occurrence, the potential extra query that might be required should be inconsequential (performance wise) and thus justify the divergence rom diverging from the standard of this module's overall signature, of using the public key hash as a lookup key.
+  Since this should be a rare occurrence, the potential extra query that might be required should be inconsequential (performance wise) and thus justify the divergence from diverging from the standard of this module's overall signature, of using the public key hash as a lookup key.
   As such, the database requires that explicit existence of a \myref{User}, which can only be obtained after proper authentication in the system.
 
   If the function is successful and the user can be removed, the function returns \myresult{true}.
@@ -218,7 +218,7 @@ As far as functionality goes, the database module signature is split into four s
   \begin{itemize}
   \item \myref{val put\_record : database:t -> user:User.t -> index:string -> revision:string -> data:string -> bool} \\
   This function is to be used to add content into the database, for a given user.
-  As the user data is supposed to be basically a two level index--value store, for each respective user, this function is parametrized by everything needed to identify all components accordingly.
+  As the user data is supposed to be basically a two level index--value store, for each respective user, this function is parameterized by everything needed to identify all components accordingly.
   The user stores data under certain indices, denoted here by the \myref{index:string} parameter.
   Under each such \myref{index}, there can be multiple revisions, as denoted by the  \myref{revision:string} parameter, each with its own version of the respective content, as finally denoted by the \myref{data:string} parameter.
 
@@ -252,14 +252,14 @@ As far as functionality goes, the database module signature is split into four s
   \item[Metadata] the nonce related functionality, responsible for ensuring timeliness of messages and replay protection
   \begin{itemize}
   \item \myref{val check\_and\_add\_nonce : database:t -> nonce:Nonce.t -> pub\_hash:User.hash -> bool} \\
-  This function is responsible for checking that the respective \myref{Nonce} is acceptible for the user denoted by the \myref{pub\_hash:User.hash} parameter.
+  This function is responsible for checking that the respective \myref{Nonce} is acceptable for the user denoted by the \myref{pub\_hash:User.hash} parameter.
   The latter is implicitly supposed to be used to match an existing user and also lookup in whichever datastructure will keep track of the nonces.
 
   If the nonce is acceptable in the context of this respective user, the function returns \myresult{true}, otherwise, it returns \myresult{false}.
 
   \item \myref{val clear\_old\_nonces : database:t -> unit} \\
-  This function is supposed to be used to clear the internal tracking of nonces older than some server dependant amount of time.
-  The specification of the system does not give explicit suggestions for this, as this can depend from server to server, typically based on experianced load.
+  This function is supposed to be used to clear the internal tracking of nonces older than some server dependent amount of time.
+  The specification of the system does not give explicit suggestions for this, as this can depend from server to server, typically based on experienced load.
   \end{itemize}
 \end{description}
 

@@ -12,16 +12,16 @@ One of the main such areas was overall protocol specificity.
 Initially, while going through the RFC, in an attempt to understand the protocol and try to implement pieces of it, in a bottom--up approach, there were plenty of parts of the protocol's working that were either underspecified or poorly done so.
 The most explicit of them was the cryptography part.
 Many of the primitives required by Nigori, and particularly the exact ways in which they were to be used or combined, was presented in a difficult to interpret format.
-The exact working of \myref{PBKDF} was left completelty to its supporting RFC.
-The description for the deterministic version of content encryption, \myref{EncDet}, was slightly misleading, in the sense that internally, it uses an \myref{HMAC} and then shirnks that to the fixed size of an \myref{AES} initialization vector, by splitting up the \myref{HMAC} into pieces of the requires size and applying xor among all of them, which was not directly apparent from the specification.
+The exact working of \myref{PBKDF} was left completety to its supporting RFC.
+The description for the deterministic version of content encryption, \myref{EncDet}, was slightly misleading, in the sense that internally, it uses an \myref{HMAC} and then shirkns that to the fixed size of an \myref{AES} initialization vector, by splitting up the \myref{HMAC} into pieces of the requires size and applying xor among all of them, which was not directly apparent from the specification.
 Finally, the matching decryption primitives, both deterministically and not, are completely missing.
 
-On a different note, in light of the implementation work, one aspect of the protocol became aparent and feedback and changes were brought to it to accommodate: the imposed strictness.
+On a different note, in light of the implementation work, one aspect of the protocol became apparent and feedback and changes were brought to it to accommodate: the imposed strictness.
 One aspect was that the protocol demanded all communication be done over HTTPS, with servers having valid certificates.
 In our implementation, however, we have bypassed this requirement, in an attempt to make the server a proof of concept implementation.
-The working of the protocol stays the same, nonetheless, just that the overall security of the data being transmitted now becomes succeptible to third party interceptions.
+The working of the protocol stays the same, nonetheless, just that the overall security of the data being transmitted now becomes susceptible to third party interceptions.
 However, since no critical data is ever sent in plaintext, this is not a serious concern.
-Another area where the specification is rigitd is with regards to which cryptography parts are being used.
+Another area where the specification is rigid is with regards to which cryptography parts are being used.
 For example, in our OCaml implementation, access to a proper, fully-working version of DSA, with support for key sized of up to the required 3072, was restricted.
 As such, instead of mandating DSA, having some mechanism to negotiate the protocol to be used, for example, for the signing of the content, could have been useful.
 Such a mechanism already is in place for determining the serialization formats that both client and server can and should use.
@@ -30,7 +30,7 @@ While this is done for obvious security reasons, as choosing these parameters af
 
 \subsection{Mirage and OCaml Environment}
 As initially expected and desired, the systems and toolchains we were working with were not fully production ready.
-As such, many of them, on occasion, presented less than optimal behaviour.
+As such, many of them, on occasion, presented less than optimal behavior.
 Overall, in light of our work, much feedback was brought to the various pieces in the Mirage and OCaml ecosystem which were used.
 The most important parts are highlighted here.
 
@@ -48,14 +48,14 @@ On the one hand, we would analyze the overall storage footprint and how this evo
 On the other hand, it would also be interesting to analyze the overall latency of crucial operations within the system, such as \myref{/get} and \myref{/put} calls.
 
 \subsection{Storage}
-In order to properly test the overall behaviour of the Nigori server and how much storage it consumes, we decided to analyze the persistent version of the server implementation, the one using SQLite.
+In order to properly test the overall behavior of the Nigori server and how much storage it consumes, we decided to analyze the persistent version of the server implementation, the one using SQLite.
 To do so appropriately, we filled the data store via \myref{/put} operations on the server.
 We varied both the total number of items to keep at any given time in the store, from 1 to 100000, by factors of ten, while also varying the individual items being saved as well.
 Since an item is defined by three components, an index, a revision and the actual data, we decided to fix two of these, the index and the revision, to some pre-determined size (20 bytes), as these should in a sense be metadata, and vary the size of the actual data.
-Thus, we go from 100 bytes of data, increntally, by a factor of two, up to 1600 bytes of data.
+Thus, we go from 100 bytes of data, incrementally, by a factor of two, up to 1600 bytes of data.
 
 We decided to start from a relatively low value, such that we have some potential interference between the index and revision sizes, which were fixed to small values.
-However, when encrypted through either \myref{Enc} or \myref{EncDet}, the sizes of each piece become significantly larger, as each becomes a contatenation of an \myref{AES} initialization vector, of 16 bytes, an actual \myref{AES} cypher text, which is padded to 16 bytes, and a respective HMAC of the cyper, bringing in about an extra 20 bytes.
+However, when encrypted through either \myref{Enc} or \myref{EncDet}, the sizes of each piece become significantly larger, as each becomes a concatenation of an \myref{AES} initialization vector, of 16 bytes, an actual \myref{AES} cypher text, which is padded to 16 bytes, and a respective HMAC of the cypher, bringing in about an extra 20 bytes.
 
 TODO: add back of the hand calculation based on the above
 

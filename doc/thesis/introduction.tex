@@ -3,7 +3,7 @@
 \setcounter{page}{1}
 
 Designing a computer protocol is generally a very difficult task.
-Theve have been many protocols proposed, and even implemented, across the years, that have not manage to stand the test of time (TODO: examples?).
+There have been many protocols proposed, and even implemented, across the years, that have not manage to stand the test of time (TODO: examples?).
 Those that have, on the other hand, have many things in common, and there have been attempts to document what actually makes a protocol successful \cite{RFC5218}.
 From their simplicity and proper degree of specificity, to their robustness and inherent scalability, all good protocols share certain traits.
 However, to achieve these, protocols generally go through a significant amount of trials and iterations, in their design phase.
@@ -13,9 +13,9 @@ On the one hand, we set out to analyze the inherently iterative nature of protoc
 To achieve this, we chose a protocol that was still a \wip, Nigori \cite{NigoriDraft}, hence giving us the ability to refine it, as the project is under way.
 As per its specification, Nigori describes a protocol and respective system designed for the cloud, allowing users to securely authenticate to a server and upload content in an encrypted format, such that the server is unaware of the nature of the client's data.
 Moreover, part of the motivation behind Nigori includes the innate diversity of platforms for both client and server operating systems.
-Thus, the protocol and its requirements were perfectly fitted for our goals, involving both an explicit need for interoperability, as well as having a lot of internal pieces working together in combination, from cryptograpy, to client--server communication, all requiring proper specification and modular implementation, all subject to change, while under development.
+Thus, the protocol and its requirements were perfectly fitted for our goals, involving both an explicit need for interoperability, as well as having a lot of internal pieces working together in combination, from cryptography, to client--server communication, all requiring proper specification and modular implementation, all subject to change, while under development.
 
-On the other hand, as with the choice of Nigori as a protocol, we wanted to also experiment with using relatively nacent tools and systems, as well.
+On the other hand, as with the choice of Nigori as a protocol, we wanted to also experiment with using relatively nascent tools and systems, as well.
 This would allow us to implicitly evaluate their feasibility towards aiding in protocol design.
 Hence, to help with crafting a protocol that has flexibility and interoperability directly built into it, we chose to use Mirage \cite{Mirage} as a supporting backend.
 Mirage is an exokernel built for constructing applications that can be easily deployed on multiple platforms.
@@ -24,7 +24,7 @@ Moreover, said applications can be afterwards deployed on various platforms: fro
 Considering the requirements for Nigori, this was highly useful.
 
 The remainder of the thesis is structured as follows.
-In Chapter \ref{chapter:background}, wediscuss the background knowledge needed to understand the work done, together with the motivation behind the various choices made.
+In Chapter \ref{chapter:background}, we discuss the background knowledge needed to understand the work done, together with the motivation behind the various choices made.
 In Chapter \ref{chapter:implementation}, we go through the actual implementation process and the resulting system and its pieces, we well as discuss the implications of cross--platform compilation.
 Over Chapter \ref{chapter:evaluation}, we look at both the theoretical contributions made in light of the work (such as modifications brought onto either the Nigori specification or the tools used), as well as some performance metrics of the resulting system.
 Finally, in Chapter \ref{chapter:conclusion}, we draw some conclusions for the conducted work and give directions for future work.
