@@ -19,16 +19,28 @@
 \def\authorname{Bogdan--Alexandru Matican\xspace}
 \def\authorcollege{Churchill College\xspace}
 \def\authoremail{bam39@cl.cam.ac.uk}
-\def\dissertationtitle{TODO: Nigori on Mirage}
+\def\dissertationtitle{Working with Changing Protocol Specifications:\\An Implementation of Nigori using Mirage}
 \def\wordcount{TODO: 15,000}
 \def\wip{work--in--progress\xspace}
 
 \newcommand{\myref}[1]{\texttt{#1}}
 \newcommand{\myresult}[1]{\textbf{#1}}
+\newcommand{\myfig}[3]
+{
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=#3\textwidth]{images/#2.png}
+  \caption{#1}
+  \label{fig:#2}
+\end{figure}
+}
 
 \usepackage{epsfig,graphicx,parskip,setspace,tabularx,xspace}
 \usepackage{verbatim}
 \usepackage{hyperref}
+% \usepackage{placeins}
+\usepackage{float}
+\restylefloat{table}
 
 %% START OF DOCUMENT
 \begin{document}
