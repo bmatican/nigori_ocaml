@@ -1,34 +1,55 @@
 \chapter{Evaluation} \label{chapter:evaluation}
-This chapter is split into two sections.
-On the one hand, we discuss the theoretical outcomes of the thesis.
-These are both actual modifications brought back onto the protocol specification in light of the work done throughout this thesis, as well as direct feedback on the tools and systems in use, such as Mirage -- as a whole and its set of libraries.
-On the other hand, we also show the results of a practical analysis of the performance of the obtained implementation.
+This chapter is split into several sections, directly tied to the outcomes of the work achieved.
+On the one hand, we present the notes on the actual protocol specification, in light of examining and implementing a proof--of--concept on top of it.
+We follow this up with a discussion on the choice of environment and tools, particularly Mirage and some of the OCaml libraries.
+Furthermore, we also discuss some of the testing aspects that were relevant to the proper analysis of the protocol and its implementation.
+On the other hand, we also provide a performance analysis of the system. TODO: add minor forward linking to what kind of things
 
-\section{Theoretical}
-\subsection{Nigori Protocol}
+\section{Nigori Protocol}
 As expected, working with a \wip protocol is a highly iterative task.
 What is more, there are many aspects that show themselves as potential areas of change.
 One of the main such areas was overall protocol specificity.
 Initially, while going through the RFC, in an attempt to understand the protocol and try to implement pieces of it, in a bottom--up approach, there were plenty of parts of the protocol's working that were either underspecified or poorly done so.
 The most explicit of them was the cryptography part.
 Many of the primitives required by Nigori, and particularly the exact ways in which they were to be used or combined, was presented in a difficult to interpret format.
-The exact working of \myref{PBKDF} was left completety to its supporting RFC.
-The description for the deterministic version of content encryption, \myref{EncDet}, was slightly misleading, in the sense that internally, it uses an \myref{HMAC} and then shirkns that to the fixed size of an \myref{AES} initialization vector, by splitting up the \myref{HMAC} into pieces of the requires size and applying xor among all of them, which was not directly apparent from the specification.
-Finally, the matching decryption primitives, both deterministically and not, are completely missing.
+For example, the exact working of \myref{PBKDF} was left completety to its supporting RFC.
+While this would seem natural for an RFC, the supporting document was not the easiest read to interpret and subsequently implement off of.
+Yet another example was the description for the deterministic version of content encryption, \myref{EncDet}, which was slightly misleading, in the sense that internally, it uses an \myref{HMAC} (which outputs 20 bytes) and then shrinks that to the fixed size of an \myref{AES} initialization vector (16 bytes, in the current implementation), by splitting up the \myref{HMAC} into pieces of the required size and applying xor among all of them, which was not directly apparent from the specification.
+Finally, the respective matching decryption primitives (as previously denoted by \myref{Dec} and \myref{DecDet}), are completely missing.
+TODO; discuss how these problems were resolved, nonetheless.
 
 On a different note, in light of the implementation work, one aspect of the protocol became apparent and feedback and changes were brought to it to accommodate: the imposed strictness.
 One aspect was that the protocol demanded all communication be done over HTTPS, with servers having valid certificates.
 In our implementation, however, we have bypassed this requirement, in an attempt to make the server a proof of concept implementation.
 The working of the protocol stays the same, nonetheless, just that the overall security of the data being transmitted now becomes susceptible to third party interceptions.
 However, since no critical data is ever sent in plaintext, this is not a serious concern.
+TODO: more discussion if this is true or not...
+
 Another area where the specification is rigid is with regards to which cryptography parts are being used.
 For example, in our OCaml implementation, access to a proper, fully-working version of DSA, with support for key sized of up to the required 3072, was restricted.
 As such, instead of mandating DSA, having some mechanism to negotiate the protocol to be used, for example, for the signing of the content, could have been useful.
 Such a mechanism already is in place for determining the serialization formats that both client and server can and should use.
 What is more, the Nigori specification also mandates the use of DSA with fixed internal parameters, that could be shared among the client and server libraries.
 While this is done for obvious security reasons, as choosing these parameters affects the strength of the algorithm, this nevertheless drastically reduces the options available, if, for some reason, this is not available on a targeted platform, such as our base OCaml implementation.
+TODO; discussion on flexibility vs working state or weak values...
 
-\subsection{Mirage and OCaml Environment}
+\section{Testing}
+TODO: refactor the testing part here.
+Short of using formal verification tools for the intricate pieces of the Nigori protocol, we resorted to pure functional testing.
+As such, we took the respective library offered functionality as given and tested everything that was built on top of it accordingly.
+Each of the cryptographic primitives was tested individually.
+Furthermore, as per the client requirements, these primitives were also tested in combination and the results compared against running the same operations with external tools.
+
+Also, the corresponding encryption and decryption steps were tested to work well combined.
+Likewise, the respective JSON serialization and deserialization were also tested to perform as expected, when combined with the remainder of the system functionality (encoding / encryption).
+
+Similarly, the server's database implementations for both the in--memory version and the SQLite backed one were tested in parallel, thanks to the module functorization capabilities of OCaml.
+Thus, all of the provided functionality from the database was tested, under the various scenarios in which messages could be exchanged and commands could be subsequently issued, in light of those exchanges.
+As such, proper test coverage was achieved on all code paths that were feasible.
+
+TODO: add testing for performance eval
+
+\section{Mirage and OCaml Environment}
 As initially expected and desired, the systems and toolchains we were working with were not fully production ready.
 As such, many of them, on occasion, presented less than optimal behavior.
 Overall, in light of our work, much feedback was brought to the various pieces in the Mirage and OCaml ecosystem which were used.
@@ -40,9 +61,11 @@ Also, while arguably not directly related to Mirage, the respective library used
 Primarily, the library offered the ability to annotate the ATDs with extra information that would be used in either the JSON form, or the OCaml form.
 Some mechanism, such as pre and post serialization and deserialization hooks, could have helped a great deal with semi-automating the development process of the message formats.
 
+TODO: migrate DB discussion here
+
 TODO: some discussion about \myref{js\_of\_ocaml}.
 
-\section{Practical}
+\section{Performance}
 For performance analysis, we decided we would primarily investigate two aspects of the system.
 On the one hand, we would analyze the overall storage footprint and how this evolves with both number of items, as well as respective size of the individual items.
 On the other hand, it would also be interesting to analyze the overall latency of crucial operations within the system, such as \myref{/get} and \myref{/put} calls.

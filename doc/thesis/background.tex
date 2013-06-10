@@ -8,12 +8,19 @@ Modularity, on the other hand, is supposed to complement simplicity. The concept
 Overall, this section will highlight how the above two points, and other ideas on good protocol design, shaped the motivation and choices of this thesis.
 
 \section{Choice of Protocol: Nigori}
+TODO: describe why Nigori is a good idea; details about what it helps with
+
+TODO: threat model: confidentiality (who is the user, what is their data); cannot read
+
+TODO: integrity: data cannot be modified; cannot write/alter
+
+TODO: availability (through sync/merge with other devices)
+
 As previously mentioned, in light of the objectives for this thesis, we decided to analyze the Nigori protocol.
-The project was initially started at Google, with a draft specification by Ben Laurie in 2010 \cite{NigoriDraft}.
+The project was initially started at Google, with a draft specification by Ben Laurie in 2010 \cite{NigoriDraft} and a proof--of--concept implementation in python.
 It proposed a protocol, and an implicit system revolving around it, that would allow users to login to a server and use it for data storage, while encrypting the content such that the server would be unaware of what the data actually represented.
-The timeline of the project later involved Alastair Beresford (TODO: maybe reference time at Google?) creating an initial proof--of--concept implementation in python and a follow--up migration to Java.
-An RFC \cite{NigoriRFC} of the protocol specification was also in the works in the meantime.
-The Java version of the implementation was eventually brought to an almost complete point.
+The timeline of the project later involved Alastair Beresford creating a Java version of the software in 2011, while at Google.
+An RFC \cite{NigoriRFC} of the protocol specification was also in the works in the meantime. (TODO: discuss missing pieces in Java?: Shamir split)
 Also, in parallel with this thesis, a DART \cite{DART} / Javascript based version of the required client library for the protocol was being developed by Daniel Thomas.
 
 As a protocol, Nigori was envisioned out of the increasingly prevalent use of the cloud as a storage platform and the direct impact that has on the privacy of both users and their respective data.
@@ -26,19 +33,19 @@ As such, we now have different native mobile OS applications, various traditiona
 In this context, being able to develop the core of a protocol once and have it compiled and used consistently and with strong guarantees across platforms, becomes a very strong incentive.
 What is more, Nigori was created assuming the diversity of clients, both generically, and particularly, with each individual user potentially having different devices, running the same applications, that would require both proper synchronization mechanisms and strong data privacy guarantees.
 
-Thus, given both the volatility of the project development, coupled with the multi--platform requirements, Nigori was a perfect candidate for an implementation based off of a continuous development specification.
+Thus, given both the volatility of the project development, coupled with the multi--platform requirements, Nigori was a perfect candidate for an implementation based off of a continuous development specification. (TODO: not much change..)
 In the following, we shall give a more detailed description of both the client and the server.
 
 \subsection{Client}
 By using Nigori, applications must be aware of two major components: the local client library and the (potentially) remote server.
-The client is actively responsible with properly encrypting the user data and ensuring communication with the server is done appropriately.
-However, on top of this, the client must also passively make use of distributed version control primitives (TODO: git, papers?) in order to guarantee that content is properly synchronized across a user's different devices and potential conflicts are mitigated -- through the \textit{App defined merge} step in Figure \ref{fig:sync}.
+The client is actively responsible with encrypting the user's data as well as ensuring proper communication with the server.
+However, on top of this, the client must also passively make use of distributed version control primitives (TODO: git, Bayou) in order to guarantee that content is properly synchronized across a user's different devices and potential conflicts are mitigated -- through the \textit{App defined merge} step in Figure \ref{fig:sync}. TODO: why is sync needed, link to threat model.
 
-\myfig{Synchronization and separation of trust in Nigori.}{sync}{0.8}
+\myfig{Synchronization and separation of trust in Nigori. TODO: reference}{sync}{0.8}
 
 As such, the protocol becomes highly client--centric, placing the responsibility of both security and conflict resolution on the user end.
-Nevertheless, this is meant to increase the overall safety of the user's data, as, removing control from the server, implicitly places control in the hands of the user (client).
-With this need for control comes an inherent set of responsibilities, however.
+Nevertheless, this is meant to increase the overall safety of the user's data, as, removing control from the server, implicitly places control in the hands of the user (client), while also prohibiting the server from accessing the user's content.
+However, with this need for control comes an inherent set of responsibilities.
 The client is thus focused highly on security, and as such, must make proper use of certain primitives, as described further -- and given in detail in the specification.
 \begin{description}
   \item[\myref{SHA-1}] is a secure hash function that generates a 160--bit message digest, as specified in RFC3174 \cite{RFC3174}.
@@ -125,7 +132,7 @@ These can be abstracted away and implemented separately and potentially even for
 On top of these, Nigori modularly builds the key generation methods as well as the encryption and decryption mechanics for user data.
 
 \subsection{Server}
-In describing the server, we can easily parallel between the respective pieces of functionality it needs to provide and the five constituent parts of a protocol \cite{ProtocolDesign}:
+In describing the server, we can easily draw parallels between the respective pieces of functionality it needs to provide and the five constituent parts of a protocol \cite{ProtocolDesign}:
 \begin{description}
   \item[Service] What it provides.
   \item[Assumptions] The environment in which it runs.
@@ -189,6 +196,7 @@ At the moment, the specification requires all communication to be done across HT
 Moreover, every request must be an HTTP POST request, with the payload (body) being the actual message.
 However, in order to communicate, the client and server must both understand the data they exchange.
 As such, this data must be serialized to a common format.
+TODO: discuss why JSON vs protobuf (backwards compatibility, debugging, javascript vs binary format speed); also, favors JSON.
 The Nigori specification strongly favors protobufs, yet mandates that servers must at least provide JSON (TODO: mb cite?).
 What is more, since the data that is sent can be arbitrary byte strings, some form of encoding is also required.
 For this, Nigori mandates that all of the actual payload pieces must be encoded using Base64.
@@ -209,7 +217,7 @@ Mirage was built to be a \textit{library operating system}.
 What this means is that, the application being developed can be packaged together with all the underlying functionality required from the actual operating system into a single \textit{unikernel} that can be directly deployed on top of hypervisors, such as Xen, on top of cloud infrastructure VMs.
 In turn, for Nigori, this means that we can target different platforms simply by building the application on top of Mirage.
 
-TODO: maybe add more...?
+TODO: maybe add more...? discuss how low lines of code gives security benefits (fewer attack vectors) while OCaml type safety provides practical security guarantees, at no performance costs.
 
 On a different note, one important choice that was made from the beginning of the project was that all the implementation work should be done in a functional programming language with a static type system.
 The motivations for this are two fold.
@@ -224,6 +232,8 @@ TODO: add picture.
 Thus, the base of the funnel consists of the many (small) individual pieces of protocol functionality, properly specified and potentially formally verified, guaranteed to offer the envisioned functionality, such as the cryptographic primitives in Nigori.
 The top of the funnel is represented by the broad spectrum of final deployments of the protocol, depending on the targeted platform.
 All of these would in a sense be variations, or specializations of the core of the protocol, the narrow waist of the funnel, which would be represent the complete implementation of the protocol, achieved by modularly combining the functionality from lower down the funnel, in our language of choice, ready to be compiled away towards the needed platforms.
+
+TODO: refactor this as OCaml is a starting point, not a precise choice...turn around into, as Mirage was written in OCaml, this was a good place to start with, plus it fit the functional requirements.
 
 Considering both the requirement for a functional programming for implementation, as well as the fact that Mirage is written in OCaml, this made the choice of language relatively straightforward, as it would greatly help with integration work, since all the libraries the system provides would become directly available for an application developer.
 What is more, the development environment around Mirage consists of plenty of OCaml libraries adapted for direct use.

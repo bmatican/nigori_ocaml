@@ -3,9 +3,7 @@ Nigori, as a system, is basically an encrypted index--value store, built for the
 As such, the big picture consists of primarily two components: a client and a server.
 Nevertheless, due to the nature of the interactions between these two pieces, quite a sizeable chunk of code ends up being shared, particularly the communication and some of the encryption mechanics.
 This chapter is modeled after the actual implementation, showing the shared code, and the client and the server in separation, while also discussing the interactions between them.
-
-In addition to describing the base OCaml implementation, this chapter also provides details about the testing done to ensure the application performs according to specifications.
-Lastly, the separate compilation from OCaml code to JavaScript is also detailed, along with both what it requires as well as what it entails.
+In addition to describing the base OCaml implementation, this chapter also provides about the separate compilation from OCaml code to JavaScript, along with both what it requires as well as what it entails.
 
 TODO: potentially add a figure or set of figures showing module dependencies and individual pieces, to help with direct naming.
 
@@ -30,7 +28,7 @@ Finally, on the server, the signature is verified, accordingly, using the user's
 Lastly, \myref{PBKDF} is used, together with the users's master password, on the client, to generate specific keys to be used for user authentication, encryption, MACs or as initialization vectors in \myref{AES}.
 
 Of all of the above, \myref{SHA-1} and \myref{HMAC} came with the OCaml \myref{cryptokit} library.
-\myref{AES} was also provided, but had to be tweaked according to the protocol specification.
+\myref{AES} was also provided, however, using it (in \myref{Enc} and \myref{EncDet}) required tweaking its parameters, as per the protocol specification.
 The \myref{PBKDF} was directly implemented, as per its supporting RFC \cite{RFC2898}.
 In the case of \myref{DSA}, however, there were some complications.
 Since it required the use of multiple precision arithmetics, we decided to use a custom patch applied to the \myref{cryptokit} library, instead of building it from scratch.
@@ -57,6 +55,9 @@ However, protobufs do not currently have support for OCaml.
 As such, we reverted to the second serialization format that Nigori should always support, which is JSON.
 Thankfully, through a third party toolset and OCaml library, \myref{atdgen}, we were able to write up the messages as ATD.
 These were then integrated into the build step of the project to automatically create the OCaml types and implicitly, the JSON serialization and deserialization functions required.
+Below we go through a small example of using ATDs and what they generate.
+
+TODO: add picture and comments
 
 The good part about this toolchain is that it allowed for each message to be crafted individually, yet be annotated with separate prefixes, so as to not generate multiple conflicting OCaml types with fields with the same name, in the same file.
 Also, the fact that the functions for going back and forth through JSON were directly accessible also made development easier.
@@ -151,6 +152,8 @@ In the end, we decided to opt for both, as the module system in OCaml made funct
 This side of the server also makes use of a special module called \myref{User} which keeps track of user specific data.
 At the moment, that is the user's public key and its respective hash, together with a (potentially human readable form) name and the registration date when the user was accepted into the system.
 This information is useful for tracking and logging reasons.
+
+TODO: refactor this; add pictures; re--indent
 
 As far as functionality goes, the database module signature is split into four sections (we provide the OCaml signatures for ease of understanding):
 \begin{description}
@@ -291,28 +294,16 @@ Moreover, the security mechanisms described in the specifications are also appli
 Some interesting factors worth mentioning in the development of the client revolve around the actual communication and interaction between client and server.
 Due to the available REST interface on the server, the client has to be aware of the available endpoints.
 As such, this pushes these towards them being available in a more shared location.
-Moreover, due to the way in which messages are packaged, signed, serialized and eventually marshalled on the client side and ultimately undone on the server side, getting the client to work properly was probably the most intensive part of the project.
+Moreover, on the message side, packing, signatures and verification, as well as serialization and deserialization were all pushed in the shared section, such that the messages would be self--contained, yet both the client and the server could access the respective functionality that they needed.
+Overall, due to the complex set of actions that are performed on messages, getting the client to work properly was probably the most intensive part of the project.
 Despite the client in itself being relatively small, code--wise, that is purely due to the amount of code that was moved into the shared section, out of necessity.
 
-As such, the client required all components to work properly, both individually, and together, before it would function right.
-\myref{DSA} key generation had to work.
+The client required all components to work properly, both individually, and together, before it would function right and as such, most difficulties were experienced when attempting to put all the pieces properly together.
+To begin with, \myref{DSA} key generation had to work, and, as mentioned, this was quite cumbersome.
 Message structure had to be fixed and useful for both client queries and potential server responses, together with the respective JSON (de)serialization.
-Proper \myref{DSA} signatures on top of the respective messages and proof that the respective \myref{DSA} signature verification worked right needed to be accomplished.
+Proper \myref{DSA} signatures on top of the respective messages and proof that the respective \myref{DSA} signature verification mechanism worked right needed to be accomplished.
 However, due to the proper methodology applied across the project, the integration work did not prove much hassle, from the side of what was being developed.
 Most problems that did arise came from the external tools being used, as previously detailed.
-
-\section{Testing}
-Short of using formal verification tools for the intricate pieces of the Nigori protocol, we resorted to pure functional testing.
-As such, we took the respective library offered functionality as given and tested everything that was built on top of it accordingly.
-Each of the cryptographic primitives was tested individually.
-Furthermore, as per the client requirements, these primitives were also tested in combination and the results compared against running the same operations with external tools.
-
-Also, the corresponding encryption and decryption steps were tested to work well combined.
-Likewise, the respective JSON serialization and deserialization were also tested to perform as expected, when combined with the remainder of the system functionality (encoding / encryption).
-
-Similarly, the server's database implementations for both the in--memory version and the SQLite backed one were tested in parallel, thanks to the module functorization capabilities of OCaml.
-Thus, all of the provided functionality from the database was tested, under the various scenarios in which messages could be exchanged and commands could be subsequently issued, in light of those exchanges.
-As such, proper test coverage was achieved on all code paths that were feasible.
 
 \section{JavaScript implementation}
 TODO: Discuss how the semi--automated version of the client to JS is done.
