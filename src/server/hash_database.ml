@@ -43,7 +43,8 @@ module DB = struct
     ) in
     Hashtbl.fold f tbl []
 
-  let create () =
+  let create ?(name="") () =
+    let _ = name in (* ignored for in-memory *)
     let stores = make_stores () in
     let users = make_users () in
     let nonces = make_nonces () in

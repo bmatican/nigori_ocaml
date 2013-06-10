@@ -42,11 +42,10 @@ module UnassistedKeys : Derivations_abstract.Keys = struct
     }
 
   let make_packet iv cypher hmac =
-    Utils.concat [
-      (InitializationVector.to_string iv);
-      (AES256.to_string cypher);
-      (HMAC.to_string hmac);
-    ]
+    let iv = InitializationVector.to_string iv in
+    let cypher = AES256.to_string cypher in
+    let hmac = HMAC.to_string hmac in
+    Utils.concat [iv; cypher; hmac;]
 
   let xor_hmac input =
     let iv_size = InitializationVector.valid_size in

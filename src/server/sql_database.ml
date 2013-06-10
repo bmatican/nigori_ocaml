@@ -36,7 +36,7 @@ module DB = struct
     nonces: (nonce, [`RW]) Orm.Db.t;
   }
 
-  let db_name = "nigori.db"
+  let default_db_name = "nigori.db"
 
   let make_key_fk_user user =
     user.user_hash
@@ -45,12 +45,12 @@ module DB = struct
   let make_nonce_fk_user user =
     user.user_hash
 
-  let create () =
+  let create ?(name=default_db_name) () =
     {
-      users = user_init db_name;
-      keys = key_init db_name;
-      revisions = revision_init db_name;
-      nonces = nonce_init db_name;
+      users = user_init name;
+      keys = key_init name;
+      revisions = revision_init name;
+      nonces = nonce_init name;
     }
 
 

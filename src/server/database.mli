@@ -1,7 +1,7 @@
 module type DB = sig
   type t
 
-  val create : unit -> t
+  val create : ?name:string -> unit -> t
 
   val get_user : database:t -> pub_hash:User.hash -> User.t option
   val have_user : database:t -> pub_hash:User.hash -> bool

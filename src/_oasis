@@ -149,3 +149,16 @@ Executable test_derivations
 Test test_derivations
   Run:                true
   Command:            $test_derivations
+
+Executable test_batch
+  Path:               test/
+  MainIs:             test_batch.ml
+  BuildDepends:       lib_test,
+                      oUnit,
+                      lib_server,
+                      lib_client
+  Install:            false
+
+Test test_batch
+  Run:                true
+  Command:            $test_batch

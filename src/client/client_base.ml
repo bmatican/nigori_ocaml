@@ -37,10 +37,12 @@ module Client = struct
         endpoint
       )
 
-  let print_response ~decode t = match_lwt t with
+  let print_response ~decode t time = match_lwt t with
     | None ->
         Printf.printf "Got no response back!\n"; return ()
     | Some x ->
+        let time = (Unix.gettimeofday ()) -. time in
+        Printf.eprintf "WIRE: %f\n" time;
         let response = fst x in
         let body = snd x in
         lwt body = Body.string_of_body body in
@@ -55,6 +57,7 @@ module Client = struct
     Cohttp_client.post ?body url
 
   let post client message ?(decode=(fun x -> x)) ?(print=true) endpoint =
+    let time = Unix.gettimeofday () in
     let action =
       do_post
         (Body.body_of_string message)
@@ -62,7 +65,7 @@ module Client = struct
     in
     if print
     then
-      print_response ~decode action
+      print_response ~decode action time
     else
       return ()
 
@@ -134,9 +137,13 @@ module Client = struct
     string_of_get_response decoded
 
   let get client key ?(revision=None) =
+    let start = Unix.gettimeofday () in
     let request = encode_get_request
       (make_get_request client.factory key ~revision ())
     in
     let message = string_of_get_request request in
+    let finish = Unix.gettimeofday () in
+    let diff = finish -. start in
+    let _ = Printf.eprintf "CLIENT: %f\n" diff in
     post client message
 end

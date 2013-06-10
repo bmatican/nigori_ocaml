@@ -137,26 +137,36 @@ module Make (DB : Database.DB) = struct
     }
   end
 
+  let time f =
+    let start = Unix.gettimeofday () in
+    let res = f () in
+    let finish = Unix.gettimeofday () in
+    Printf.eprintf "SERVER: %f\n" (finish -. start);
+    res
+
   let get h = begin
-    lwt body = Body.string_of_body h.body in
-    let request = get_request_of_string body in
-    let request = decode_get_request request in
-    let auth_request = request.get_request_auth in
-    let message = to_sign_get_request request in
-    let database = h.database in
-    Validation.authenticate_user database auth_request ~message (fun user -> begin
-      let key = request.get_request_key in
-      let revision = request.get_request_revision in
-      let some_revisions = DB.get_record ~database ~user ~key ~revision () in
-      match some_revisions with
-      | None -> Generic.not_found ()
-      | Some revisions -> begin
-        let response = make_get_response revisions ~key:(Some (key)) () in
-        let response = encode_get_response response in
-        let msg = string_of_get_response response in
-        Generic.ok ~msg ()
-      end
-    end)
+    let to_time () = begin
+      lwt body = Body.string_of_body h.body in
+      let request = get_request_of_string body in
+      let request = decode_get_request request in
+      let auth_request = request.get_request_auth in
+      let message = to_sign_get_request request in
+      let database = h.database in
+      Validation.authenticate_user database auth_request ~message (fun user -> begin
+        let key = request.get_request_key in
+        let revision = request.get_request_revision in
+        let some_revisions = DB.get_record ~database ~user ~key ~revision () in
+        match some_revisions with
+        | None -> Generic.not_found ()
+        | Some revisions -> begin
+          let response = make_get_response revisions ~key:(Some (key)) () in
+          let response = encode_get_response response in
+          let msg = string_of_get_response response in
+          Generic.ok ~msg ()
+        end
+      end)
+    end in
+    time to_time
   end
 
   let get_indices h = begin
@@ -201,21 +211,24 @@ module Make (DB : Database.DB) = struct
   end
 
   let put h = begin
-    lwt body = Body.string_of_body h.body in
-    let request = put_request_of_string body in
-    let request = decode_put_request request in
-    let auth_request = request.put_request_auth in
-    let message = to_sign_put_request request in
-    let database = h.database in
-    Validation.authenticate_user database auth_request ~message (fun user -> begin
-      let key = request.put_request_key in
-      let revision = request.put_request_revision in
-      let data = request.put_request_value in
-      let ret = DB.put_record ~database ~user ~key ~revision ~data in
-      if ret
-      then Generic.ok ~msg:"Record successfully added" ()
-      else Generic.internal ~msg:"Could not add record" ()
-    end)
+    let to_time () = begin
+      lwt body = Body.string_of_body h.body in
+      let request = put_request_of_string body in
+      let request = decode_put_request request in
+      let auth_request = request.put_request_auth in
+      let message = to_sign_put_request request in
+      let database = h.database in
+      Validation.authenticate_user database auth_request ~message (fun user -> begin
+        let key = request.put_request_key in
+        let revision = request.put_request_revision in
+        let data = request.put_request_value in
+        let ret = DB.put_record ~database ~user ~key ~revision ~data in
+        if ret
+        then Generic.ok ~msg:"Record successfully added" ()
+        else Generic.internal ~msg:"Could not add record" ()
+      end)
+    end in
+    time to_time
   end
 
   let delete h = begin
