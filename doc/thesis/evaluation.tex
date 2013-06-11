@@ -1,40 +1,41 @@
 \chapter{Evaluation} \label{chapter:evaluation}
 This chapter is split into several sections, directly tied to the outcomes of the work achieved.
-On the one hand, we present the notes on the actual protocol specification, in light of examining and implementing a proof--of--concept on top of it.
-We follow this up with a discussion on the choice of environment and tools, particularly Mirage and some of the OCaml libraries.
-Furthermore, we also discuss some of the testing aspects that were relevant to the proper analysis of the protocol and its implementation.
-On the other hand, we also provide a performance analysis of the system. TODO: add minor forward linking to what kind of things
+Firstly, we present the notes on the actual protocol specification, in light of examining and implementing a proof--of--concept on top of it.
+We follow this up with a discussion of some of the testing aspects that were relevant to the proper analysis of the protocol and its implementation.
+Furthermore, we give some more details on the choice of environment and tools (in essence, Mirage and some of the OCaml libraries) and the respective feedback on their usage.
+Lastly, we provide a performance analysis of the system, with regards to storage efficiency, request latency and internal timings of cryptography operations.
 
 \section{Nigori Protocol} \label{sec:evaluation:protocol}
-As expected, working with a \wip protocol is a highly iterative task.
-What is more, there are many aspects that show themselves as potential areas of change.
+As expected, working with a \wip protocol is a highly iterative task in the sense that there are many aspects that show themselves as potential areas of change.
 One of the main such areas was overall protocol specificity.
-Initially, while going through the RFC, in an attempt to understand the protocol and try to implement pieces of it, in a bottom--up approach, there were plenty of parts of the protocol's working that were either underspecified or poorly done so.
+Initially, while going through the RFC, in an attempt to understand the protocol and implement pieces of it, in a bottom--up approach, there were plenty of parts of the protocol's working that were either under or poorly specified.
 The most explicit of them was the cryptography part.
 Many of the primitives required by Nigori, and particularly the exact ways in which they were to be used or combined, was presented in a difficult to interpret format.
 For example, the exact working of \myref{PBKDF} was left completety to its supporting RFC.
 While this would seem natural for an RFC, the supporting document was not the easiest read to interpret and subsequently implement off of.
-Yet another example was the description for the deterministic version of content encryption, \myref{EncDet}, which was slightly misleading, in the sense that internally, it uses an \myref{HMAC} (which outputs 20 bytes) and then shrinks that to the fixed size of an \myref{AES} initialization vector (16 bytes, in the current implementation), by splitting up the \myref{HMAC} into pieces of the required size and applying xor among all of them, which was not directly apparent from the specification.
+Yet another example was the description for the deterministic version of content encryption, \myref{EncDet}, which was slightly misleading, in the sense that internally, it uses an \myref{HMAC} (which outputs 20 bytes) and then shrinks that to the fixed size of an \myref{AES} initialization vector (16 bytes, in the current implementation), by splitting up the \myref{HMAC} into pieces of the required size and applying xor among them, which was not directly apparent from the specification.
 Finally, the respective matching decryption primitives (as previously denoted by \myref{Dec} and \myref{DecDet}), are completely missing.
-TODO; discuss how these problems were resolved, nonetheless.
+Nevertheless, most of these misunderstandings were resolved with direct communication with the RFC authors and access to the source code of the previous implementations, at specific points.
 
 On a different note, in light of the implementation work, one aspect of the protocol became apparent and feedback and changes were brought to it to accommodate: the imposed strictness.
-One aspect was that the protocol demanded all communication be done over HTTPS, with servers having valid certificates.
-In our implementation, however, we have bypassed this requirement, in an attempt to make the server a proof of concept implementation.
+As it stands now, the protocol demands that all communication be done over HTTPS, with servers having valid certificates.
+In our implementation, however, we have bypassed this requirement, in an attempt to make the server a proof--of--concept implementation.
 The working of the protocol stays the same, nonetheless, just that the overall security of the data being transmitted now becomes susceptible to third party interceptions.
-However, since no critical data is ever sent in plaintext, this is not a serious concern.
-TODO: more discussion if this is true or not...
+However, since no secret data is ever sent in plaintext, this should not be a serious concern.
+Nevertheless, this does violate the \textbf{authentication} property of security protocols, as now the server does not have a valid means of proving its identity to the client.
+However, we can argue that HTTPS certificates can also be faked, thus making this an attack vector that is peripheral to the protocol, per se.
 
 Another area where the specification is rigid is with regards to which cryptography parts are being used.
 For example, in our OCaml implementation, access to a proper, fully-working version of DSA, with support for key sized of up to the required 3072, was restricted.
 As such, instead of mandating DSA, having some mechanism to negotiate the protocol to be used, for example, for the signing of the content, could have been useful.
-Such a mechanism already is in place for determining the serialization formats that both client and server can and should use.
+Such a mechanism is already in place for determining the serialization formats that both client and server can and should use.
 What is more, the Nigori specification also mandates the use of DSA with fixed internal parameters, that could be shared among the client and server libraries.
-While this is done for obvious security reasons, as choosing these parameters affects the strength of the algorithm, this nevertheless drastically reduces the options available, if, for some reason, this is not available on a targeted platform, such as our base OCaml implementation.
-TODO; discussion on flexibility vs working state or weak values...we can send all parameters instead of just key or hash.
+While this is done for obvious security reasons, as choosing these parameters affects the strength of the algorithm's working, this nevertheless leaves no options for platforms that do not have access to the mandated option.
+Ultimately, this is a matter of choice and debate, between the flexibility offered by some form of algorithm negotiation phase and the potential security issues that can arise from using weak algorithms or weak parameters.
+However, we believe that some form of middle-ground can be achieved, while also gauging and mandating a certain algorithmic strength of encryption.
+At the very least, the system could mediate algorithms and key sizes and subsequently pass on to the client the parameters it should use, if the server is aware of sensible defaults for the options the client has available.
 
 \section{Testing}
-TODO: refactor the testing part here.
 Short of using formal verification tools for the intricate pieces of the Nigori protocol, we resorted to pure functional testing.
 As such, we took the respective library offered functionality as given and tested everything that was built on top of it accordingly.
 Each of the cryptographic primitives was tested individually.
@@ -45,9 +46,10 @@ Likewise, the respective JSON serialization and deserialization were also tested
 
 Similarly, the server's database implementations for both the in--memory version and the SQLite backed one were tested in parallel, thanks to the module functorization capabilities of OCaml.
 Thus, all of the provided functionality from the database was tested, under the various scenarios in which messages could be exchanged and commands could be subsequently issued, in light of those exchanges.
-As such, proper test coverage was achieved on all code paths that were feasible.
+As such, proper test coverage was achieved on all code paths that were feasible, given the database interface provided.
 
-TODO: add testing for performance eval
+This methodology of performing both individual unit tests for the simple pieces of protocol workings, together with integration testing for the modularly composed pieces was consistent with our generic approach to protocol design.
+Furthermore, it proved fundamental when it came time to integrate the pieces into making the client and server interact.
 
 \section{Mirage and OCaml Environment}
 As initially expected and desired, the systems and toolchains we were working with were not fully production ready.
@@ -82,14 +84,14 @@ Some mechanism, such as pre and post serialization and deserialization hooks, co
 TODO: some discussion about \myref{js\_of\_ocaml}.
 
 \section{Performance}
-For performance analysis, we decided we would primarily investigate two aspects of the system.
+For performance analysis, we decided we would primarily investigate three aspects of the system.
 On the one hand, we would analyze the overall storage footprint and how this evolves with both number of items, as well as respective size of the individual items.
-On the other hand, it would also be interesting to analyze the overall latency of crucial operations within the system, such as \myref{/get} and \myref{/put} calls.
+On the other hand, we realized it would also be important to have some analysis of the overall latency of performing requests -- such as \myref{/get} calls.
 
 \subsection{Storage}
 In order to properly test the overall behavior of the Nigori server and how much storage it consumes, we decided to analyze the persistent version of the server implementation, the one using SQLite.
 To do so appropriately, we filled the data store via \myref{/put} operations on the server.
-We varied both the total number of items to keep at any given time in the store, from 1 to 100000, by factors of ten, while also varying the individual items being saved as well.
+We varied both the total number of items to keep at any given time in the store, from 1 to 10000, by factors of ten, while also varying the individual items being saved as well.
 Since an item is defined by three components, an index, a revision and the actual data, we decided to fix two of these, the index and the revision, to some pre-determined size (20 bytes), as these should in a sense be metadata, and vary the size of the actual data.
 Thus, we go from 100 bytes of data, incrementally, by a factor of two, up to 1600 bytes of data.
 
@@ -104,15 +106,15 @@ TODO: talk about results, interpret, hypothesis, expectations compared with calc
 
 \subsection{Latency}
 This part of the analysis makes use of the data stores previously generated in the storage analysis, as those offer us content at various fill rates.
-As such, the evaluation is two fold.
-On the one hand, a direct latency analysis on \myref{/put} or \myref{/get} operations, on the various sizes of the data stores provides input on how the time of these operations varies depending on the server load.
-However, an interesting aspect to consider is that, since most of these operations rely heavily on the client-side encryption, a lot of time will be spent there.
-Thus, on the other hand, an interesting aspect to look at is the breakdown of request times.
-Every request can therefore be split into three major time components: time spent on the client side (before sending the request and while processing the response), time spent on the medium of travel (to and from the server and in the internals of the HTTP library) and finally time spent on the server (unpacking the request, executing against the database, packing the response).
-All of these times and their individual components can be carefully measured and in large, they are all important.
+As such, the evaluation is split into several parts.
+Initially, we were considering looking at both \myref{/put} and \myref{/get} operations, and how their latency response changes.
+However, we decided to take a step back and look at the big picture and the individual pieces of a request, before we proceed.
+Thus, every request can be split into three major time components: time spent on the client side (encryption and packaging of message), time spent on the medium of travel (to and from the server, in the internals of the HTTP library and in the kernel networking stack) and finally time spent on the server (unpacking the request, executing against the database, packing the response).
+This realization caused us to add modifications to the implementation, to be used for the latency evaluation part, by reporting the respective times.
+Subsequently, this subsection analyzes these three components, separately.
 
-TOOD: the respective experiments
+TODO: client side of timing; AES encryption at various rates and sizes of data; DSA signature of varying sizes
 
-TODO: add graphs
+TODO: on the wire timing; discussion about HTTP layer in mirage libs; talk about kernel networking stack and respective stddev in data; explicit comments on variation with size of data; note on use of same machine and implicit time on wire being close to 0
 
-TODO: talk about results, interpret, hypothesis, expectations...
+TODO: server side of timing; DSA verification times?; database query times; discussion of means and increase with respect to both number of items and size of data
