@@ -8,125 +8,126 @@ Modularity, on the other hand, is supposed to complement simplicity. The concept
 Overall, this section will highlight how the above two points, and other ideas on good protocol design, shaped the motivation and choices of this thesis.
 
 \section{Choice of Protocol: Nigori}
-TODO: describe why Nigori is a good idea; details about what it helps with
-
-TODO: threat model: confidentiality (who is the user, what is their data); cannot read
-
-TODO: integrity: data cannot be modified; cannot write/alter
-
-TODO: availability (through sync/merge with other devices)
-
-As previously mentioned, in light of the objectives for this thesis, we decided to analyze the Nigori protocol.
-The project was initially started at Google, with a draft specification by Ben Laurie in 2010 \cite{NigoriDraft} and a proof--of--concept implementation in python.
-It proposed a protocol, and an implicit system revolving around it, that would allow users to login to a server and use it for data storage, while encrypting the content such that the server would be unaware of what the data actually represented.
-The timeline of the project later involved Alastair Beresford creating a Java version of the software in 2011, while at Google.
-An RFC \cite{NigoriRFC} of the protocol specification was also in the works in the meantime. (TODO: discuss missing pieces in Java?: Shamir split)
+When we began work on this thesis, we decided to choose Nigori for our protocol investigation for two main reasons.
+On the one hand, it was a fairly new protocol.
+The project was initially started at Google, with a draft specification by Ben Laurie in 2010 \cite{NigoriDraft} and an initial proof--of--concept implementation in python.
+It proposed a security protocol, and an implicit system revolving around it, that would allow users to login to a server and use it for data storage, while encrypting the content such that the server would be unaware of what the data actually represented.
+The timeline of the project later involved Alastair Beresford creating a Java version of the software in 2011, while at Google with an RFC \cite{NigoriRFC} of the protocol specification also in the works. (TODO: discuss missing pieces in Java?: Shamir split)
 Also, in parallel with this thesis, a DART \cite{DART} / Javascript based version of the required client library for the protocol was being developed by Daniel Thomas.
 
-As a protocol, Nigori was envisioned out of the increasingly prevalent use of the cloud as a storage platform and the direct impact that has on the privacy of both users and their respective data.
-One the one hand, in such an environment, the cloud is one centralized entity for storing application specific data -- including potentially sensitive user data.
-Nevertheless, the actual physical representation of the storage can be completely decentralized, to the extent of data lying in separate geographic regions.
-This raises questions of the security and integrity of data, if the respective servers get compromised.
+On the other hand, Nigori was interesting from the point of view of protocol analysis, as well.
+As a security protocol, it incorporated and covered many of the core aspects of information security, despite its relatively young age.
+We list some of these concepts below, with short descriptions, yet we highlight them more, as we go through the working of the protocol, per se.
+\begin{description}
+\item[Confidentiality] refers to the act of preventing disclore or discovery of information, both with regards to a user's identity, as well as his respective data.
 
-One the other hand, in parallel with the adoption of using cloud storage, the number of different types of clients accessing the respective data has also featured an increase in diversity.
-As such, we now have different native mobile OS applications, various traditional (PC/laptop) operating systems and their native applications, as well as various browser counterparts, all serving as clients, potentially sending data back into the cloud.
-In this context, being able to develop the core of a protocol once and have it compiled and used consistently and with strong guarantees across platforms, becomes a very strong incentive.
-What is more, Nigori was created assuming the diversity of clients, both generically, and particularly, with each individual user potentially having different devices, running the same applications, that would require both proper synchronization mechanisms and strong data privacy guarantees.
+\item[Integrity] is the property that ensures that data is accurately and consistently held, once provided, meaning it cannot be altered in any unauthorized or undetectable form.
 
-Thus, given both the volatility of the project development, coupled with the multi--platform requirements, Nigori was a perfect candidate for an implementation based off of a continuous development specification. (TODO: not much change..)
-In the following, we shall give a more detailed description of both the client and the server.
+\item[Availability] means having guaranteed access to data, on demand.
+
+\item[Authenticity] refers to having communication that is genuine, done through valid messages and parties that actually are who they claim to be -- generally achieved through some form of content signing.
+\end{description}
+
+As a protocol, Nigori was envisioned out of the increasingly prevalent use of the cloud as a storage platform and the impact this has on the privacy of both users and their data.
+Since the cloud can represent a completely heterogeneous group of storage machines, potentially completely decentralized and spread geographically, Nigori assumes that servers can get compromised.
+Nevertheless, it only assumes that the servers are \textit{honest--but--curious} -- meaning that they might seek access to the stored data, but they must respect the protocol, as far as communication goes, otherwise failure occurs.
+As such, from a security point of view, Nigori chooses to strongly enforce \textbf{confidentiality}.
+It makes use of cryptographic measures to provide servers with encrypted data, protecting both a user's identity, as well as his data (secrets), as only the user should be able to decrypt the data.
+
+On a different note, a different focus for Nigori, as a protocol, is on the increasing level of diversity presented to application developers.
+in parallel with the adoption of using cloud storage, the number of different types of clients accessing it has also increased.
+As such, we now have different native mobile OS applications, various traditional (PC/laptop) operating systems and their native applications, as well as various browser counterparts, all serving as clients, accessing cloud data.
+In this context, being able to develop the core of a protocol, such as Nigori, once, and have it compiled and used consistently and with strong guarantees across platforms, becomes a very strong incentive.
+With this in mind, Nigori was created with this client diversity at its core, assuming individual users potentially having different devices, running the same application on all of them, backed by a Nigori data store.
+This has two main advantages.
+On the one hand, Nigori can help serve as a single--signon mechanism, requiring one single password entry for access to the user's private data.
+On the other hand, this contributes to the aforementioned \textbf{availability} aspect, as clients can make use of synchronization mechanisms to access data from various locations.
+A perfect example of where Nigori is actually used as such is inside Google Chrome, in the Sync functionality, which allows a user's browser (private) data to be shared across devices, in all instances of the browser that are attached to his Google account (one password).
+
+In the following, we present Nigori in more detail, together with the protocol aspects that make it interesting, both from a security perspective, but also from a design point of view.
+For an easier breakdown of functionality, we describe the two main parts, the client library and the (potentially) remote server in separation, while also linking across them.
 
 \subsection{Client}
-By using Nigori, applications must be aware of two major components: the local client library and the (potentially) remote server.
-The client is actively responsible with encrypting the user's data as well as ensuring proper communication with the server.
-However, on top of this, the client must also passively make use of distributed version control primitives (TODO: git, Bayou) in order to guarantee that content is properly synchronized across a user's different devices and potential conflicts are mitigated -- through the \textit{App defined merge} step in Figure \ref{fig:sync}. TODO: why is sync needed, link to threat model.
+The two main responsibilities of the client are cryptography (encryption and decryption of data) and communication (valid messages for the interaction with the server).
+On top of this, the client must also passively make use of distributed version control primitives in order to guarantee that the user's data is always synchronized across the various devices a user may have.
+TODO: Bayou, git.
+The primary use of this is as conflict resolution mechanics -- through the \textit{App defined merge} step in Figure \ref{fig:sync}.
+However, this feature also helps with data availability, as previously mentioned, by allowing data to be fetched from various data stores.
 
 \myfig{Synchronization and separation of trust in Nigori. TODO: reference}{sync}{0.8}
 
-As such, the protocol becomes highly client--centric, placing the responsibility of both security and conflict resolution on the user end.
-Nevertheless, this is meant to increase the overall safety of the user's data, as, removing control from the server, implicitly places control in the hands of the user (client), while also prohibiting the server from accessing the user's content.
-However, with this need for control comes an inherent set of responsibilities.
-The client is thus focused highly on security, and as such, must make proper use of certain primitives, as described further -- and given in detail in the specification.
+The above make the protocol highly client--centric, with both data security and conflict resolution placed on the user end.
+However, this is a positive aspect, as implicitly, the user gets to protect his data from any other party interested in reading his data.
+Nevertheless, this control comes with an inherent set of responsibilities.
+The client must make proper use of certain cryptographic primitives, as described further -- and given in more detail in the protocol specification.
+
 \begin{description}
-  \item[\myref{SHA-1}] is a secure hash function that generates a 160--bit message digest, as specified in RFC3174 \cite{RFC3174}.
+  \item[\myref{SHA-1}] is a secure hash function that generates a 160 bit message digest, as specified in RFC3174 \cite{RFC3174}.
   It is used in Nigori either internally, in other primitives, or directly, to shorten long messages to a fixed size format, with small probability of collisions.
 
   \item[\myref{HMAC}] represents the hash--based message authentication code (MAC) of a message, under a certain key, as specified in RFC2104 \cite{RFC2104}.
   As with any MAC, it is used to verify both the integrity, as well as the authenticity of a certain message.
+  This primitive is the primary enforcer of the \textbf{integrity} property of the protocol's data.
   Implicitly, \myref{SHA-1} is the hash function used.
 
   \item[\myref{DSA}] represents the Digital Signature Algorithm, as specified by the FIPS186 document \cite{DSA}.
   The algorithm generates a pair of public and private keys.
-  These are used afterwards to sign a message on the client and verify the respective signature (and thus, message authenticity) on the server.
+  These are used afterwards to sign a message on the client and verify the respective signature (and thus, provide the \textbf{authenticity} property of the protocol) on the server.
   The Nigori specification defines fixed parameters for obtaining a public key of size 3072 bits and a private key of 128 bits.
 
   \item[\myref{AES}] is a symmetric--key encryption algorithm, as specified by the FIPS197 document \cite{AES}.
   By its nature, it allows the same cryptographic key to be used for both encryption and decryption.
   As such, the client is able to encrypt its data before sending it to the server and decrypt it when getting it back.
+  However, the server, without the client's key, cannot perform either.
 
   \item[\myref{PBKDF}] is the password based key derivation function, as specified in its respective RFC2898 \cite{RFC2898}, under \myref{PBKDF2}.
-  This takes an input password, adds a salt, and applies a secure hash function, such as \myref{SHA-1} repeatedly, in order to generate values which are to later be used as cryptographic keys.
+  This takes an input password, adds a cryptographic salt and applies a secure hash function, such as \myref{SHA-1}, repeatedly, in order to generate values which are to later be used as cryptographic keys.
   A high number of iterations (over 1000) is to be used, to make it computationally intensive, and thus a difficult attack vector.
 \end{description}
 
-\begin{comment}
-\begin{description}
-  \item[\myref{SHA-1(M)}] is a secure hash function that generates a 160--bit message digest, as specified in RFC3174 \cite{RFC3174}, applied to message \myref{M}.
-  \item[\myref{HMAC(K, M)}] represents the hash--based message authentication code of message \myref{M}, using key \myref{K}, as specified in RFC2104 \cite{RFC2104}.
-  \item[\myref{PBKDF(PRF, P, S, C, dkLen)}] is the password based key derivation function, as specified in its respective RFC2898 \cite{RFC2898}, under \myref{PBKDF2}.
-  Here, \myref{PRF} represents a pseudo--random function -- \myref{SHA-1} for Nigori's case --, \myref{P} represents the given password, \myref{S} the salt, \myref{C} the number of iterations and \myref{dkLen}, the expected output length.
-  \item[\myref{DSA}] represents the Digital Signature Algorithm, as specified by the FIPS186 document \cite{DSA}.
-  For Nigori, we require generating the public and private key pairs, signing message content and verifying signatures afterwards.
-  The specification defines fixed parameters for obtaining a public key of size 3072 bits and a private key of 128 bits.
-\end{description}
-\end{comment}
+As mentioned, one motivation for Nigori was the idea of having the user provide one single password as input to the protocol -- a master password.
+As such, by using \myref{PBKDF}, with appropriate parameters, Nigori generates a set of four cryptographic keys.
+Each of the four respective keys has a well defined role in the protocol:
 
-Stemming from the security motivation comes another focus point for Nigori.
-As a protocol, it aims to help users by giving one centralized location for encrypted storage, with direct access through one single password -- a master password.
-As such, the system allows, through the use of the \myref{PBKDF} primitive, for cryptographic keys to be derived from this master password.
-There are four keys the protocol requires, as defined in the specification:
 \begin{description}
   \item[\myref{kuser}] is used for authenticating the user on the server; it is used in such a way as to not allow potential dictionary attacks against the user's master password.
   \item[\myref{kenc}] is used for encrypting the user's secrets.
   \item[\myref{kmac}] is used for generating the MACs and implicitly authenticating the secrets.
-  \item[\myref{kiv}] is used to deterministically generate an initialization vector given a plaintext, thus preventing common prefix attacks, when using deterministic encryption.
+  \item[\myref{kiv}] is used to deterministically generate an initialization vector (IV) given a plaintext, thus preventing common prefix attacks, when using deterministic encryption.
 \end{description}
+
+For an added element of security in creating the above keys, while the number of iterations and the length of the output key are fixed constants for \myref{PBKDF}, for each respective key, and the password is the user's master password, the salt is specifically created.
+It is generated by applying \myref{PBKDF} once again to a concatenation of the username (as provided by the user) and servername, as the password, with the remaining parameters as fixed known constants.
+This is done to make the actual key derivation process both user and server dependent.
 
 For generating these above keys, the Nigori specification describes two methods, depending on how the system is setup.
 The first one is called unassisted key derivation and it only requires the user presenting his master password for authentication at the server.
 This has the drawback, however, that if the user forgets this password, all his data is subsequently lost (not decryptable), as there is no password recovery mechanism.
 The second method involves an indirection layer through a third party service that will use the user's password to derive the key that will ultimately be used for the actual authentication to the Nigori backend.
 As such, identity management is left to the third party, while the respective key to be used for contacting the Nigori data store cannot be lost.
-
 For the scope of this thesis, only the first method has been implemented.
-Since the four keys required are derived using \myref{PBKDF}, several parameters are needed.
-While the number of iterations and the length of the output key are fixed constants for each respective key and the password is the user's actual master password, the salt is specifically created.
-It is generated by applying \myref{PBKDF} once again to a concatenation of the username and servername, as the password, with the remaining parameters as fixed known constants.
-This is done to make the actual key derivation process both user and server dependent.
 
-For actual data encryption, the same four previously mentioned keys are used, in combination with two extra primitives, denoted \myref{EncDet} and \myref{Enc}, which stand for deterministic and non--deterministic encryption of data, respectively.
-The difference in determinism comes from the use of an initialization vector, that is either random, or predetermined (\myref{kiv}), in an internal call to \myref{AES}.
-In order to understand where the determinism comes into play, we must first describe the data format used in Nigori.
-
-Finally, upon obtaining the respective keys, the client is responsible with encrypting content on upload and decrypting on download.
+Upon generating the abovementioned four keys, the client can perform the required content encryption on upload and subsequent decryption on download.
 However, before we detail the respective operations, we must first go over the actual data storage format available in Nigori.
-This is crucial for both clients that want to store content as well as servers that (must) support the respective functionality.
+This is crucial for both clients that want to store content as well as servers that (must) support respective functionality.
 In effect, for a user, Nigori acts as a generic two--level index--value store.
-Every user's stored data is a mapping from indices to their respective revision history -- since, as mentioned, for conflict resolution, all data is versioned.
+Every user's stored data is a mapping from some indices to their respective revision history -- since, for conflict resolution, all data is versioned.
 This history, in turn, is as well a mapping, from revision ID to the respective value.
 As such, when a client uploads data, it is added under a certain index and, under that, a specific revision ID.
 
 TODO: make and add figure
 
-As such, since clients wish to have all of their content encrypted, this means both indices, revisions and the actual data must be secrets.
-Since for query purposes, the client must be able to provide a respective index or revision, that encryption must be deterministic.
-However, for the actual data, that encryption can be non--deterministic.
-Hence, the last pieces of cryptographic functionality represent two pairs of encrypt--decrypt functions, one that is deterministic (\myref{EncDet}, \myref{DecDet}), the other that is not (\myref{Enc}, \myref{Dec}).
+As such, since users wish to have all of their content encrypted, this means both indices, revisions and the actual data must be kept secret.
+However, since for query purposes, the client must be able to consistently provide a respective index or revision, that encryption must be deterministic.
+Nevertheless, for the actual data, that encryption can be non--deterministic.
+Hence, the last pieces of cryptographic functionality represents two pairs of encrypt--decrypt functions, one that is deterministic (\myref{EncDet}, \myref{DecDet}), the other that is not (\myref{Enc}, \myref{Dec}).
 They function by making use of \myref{AES} to encrypt the content and \myref{HMAC} to guarantee validity of messages.
-The difference in determinism comes in the use of either a fixed (\myref{kiv}) or random initialization vector for \myref{AES}.
-All these three components are concatenated together, such that the server cannot use the pieces to decrypt the content, where as the client, being able to generate the needed keys, can always decrypt its content back, on retrieval from the server.
+The difference in determinism comes in the use of either a fixed (\myref{kiv}) or random initialization vector (IV) for \myref{AES}.
+These three components (IV, encrypted content, \myref{HMAC}) are then concatenated together, such that the server cannot use the pieces to decrypt the content, as it does not possess all the \myref{AES} parameters.
+The client, on the other hand, being able to generate these, can always break the message down into its respective three components and decrypt the content, as \myref{AES} is a symmetric--key algorithm.
+As such, through the use of \myref{AES}, the client strongly enforces the \textbf{confidentiality} property for the protocol, while the use of \myref{HMAC} on top of the content provides \textbf{integrity} guarantees to both the client and the server.
 
-Overall, the client is properly designed following the aforementioned two principles.
+Lastly, the client best showcases the two main principles of good protocol design.
 The individual cryptographic primitives act as the main pieces of functionality.
 These can be abstracted away and implemented separately and potentially even formally verified for correctness.
 On top of these, Nigori modularly builds the key generation methods as well as the encryption and decryption mechanics for user data.
@@ -149,7 +150,7 @@ Moreover, it assumes that the communication can be completely stateless, without
 Thus, every new request made by a client must be fully self--contained.
 There are several other requirements, yet these are the primary ones that are of interest to our server, in the context of this thesis.
 
-In this context, the REST interface represents the underlying \textbf{assumptions} that the protocol makes about the environment in which it operates.
+Given this, the REST interface represents the underlying \textbf{assumptions} that the protocol makes about the environment in which it operates.
 As such, the server provides a set of endpoints (explicit URL paths, relative to the base host name), corresponding to the various pieces of functionality that it exposes to clients.
 Each endpoint expects a certain format of information, in order to properly do the functionality it promises.
 The required format is abstracted away and described in the Nigori specification through the use of the actual protobuf \cite{protobuf} package that is used in the Java implementation.
@@ -158,25 +159,31 @@ Overall, the provided interface acts much like remote procedural calls, with eac
 
 The various messages allowed in Nigori are primarily derived from the functionality that the server is expected to offer.
 Moreover, while all requests expect a certain message format, some also deliver responses back to the client, which in turn are also a message, in the aforementioned sense.
-Together, these messages describe the \textbf{vocabulary} used by Nigori, as a protocol.
+Together, these messages describe the \textbf{vocabulary} used by Nigori.
 As functionality goes, the messages are split into two main categories, as follows:
 \begin{description}
   \item[User management] Since each server can keep track of data for multiple users, these messages are used for registering and unregistering users, as well as generic authentication.
   \begin{description}
-    \item[Authenticate] The message must contain a hash of the user's DSA public key (for identifying the source), the servername (for identifying the destination), a one--time nonce, made of a timestamp and a random (four) byte string (to be checked for duplication, against replay attacks) and finally, the DSA signature of the entire message (to guarantee overall integrity).
-    \item[Register] The message should contain the public key the user wishes to be identified by and a token (default blank) to be used for any potential administrative rights the server may configure (such as space quotas, ACLs or otherwise).
+    \item[Authenticate] The message must contain a hash of the user's DSA public key (for identifying the source), the servername (for identifying the destination), a one--time nonce, made of a timestamp and a random (four) byte string (to be checked for duplication, against replay attacks) and finally, the DSA signature of the entire message.
+    This is the main mechanism through which the \textbf{authentication} property of the protocol is guaranteed on behalf of the client.
+
+    \item[Register] The message should contain the public key the user wishes to be identified by and a token to be used for any potential administrative rights the server may configure (such as space quotas, ACLs or otherwise).
+
     \item[Unregister] The message must contain just an actual authentication message.
-    This way, the endpoint can properly validate the identity of the user requesting the command.
+    This way, the endpoint can properly validate the identity of the user requesting the command and subsequently remove his content and identity from the store.
   \end{description}
+
   \item[User data] All commands that are related to the data of one specific user require authentication.
   This is achieved by embedding an authentication message inside whichever message is required.
-  As such, though, the respective DSA signature must cover the entirety of the message, as to respect the integrity guarantees it is meant to offer.
+  As such, though, the respective DSA signature must cover the entirety of the message, as to respect the validity guarantees it is meant to offer.
   Overall these commands are of three types:
   \begin{description}
     \item[Put] The main method of uploading content to a server.
     Considering the data format, a client is required to provide an index, a revision and a value.
+
     \item[Delete] The only method of modifying content already on the server is by removing it.
-    This may be done on an explicit basis, by providing both an index and a revision, or generically by providing the index alone, expecting to remove all the revision history underneath.
+    This may be done on an explicit basis, by providing both an index and a revision, or generically by providing the index alone, thus removing all the revision history underneath.
+
     \item[Get] For accessing the data, there are multiple types of getter methods provided by the server.
     For each of these expected getter messages, a corresponding message format for the response is expected by the client.
     These getters are basically of three types:
@@ -193,55 +200,67 @@ TODO: add figure with data flow from client to server and back.
 
 The aforementioned message formats also requires an extra set of notes.
 At the moment, the specification requires all communication to be done across HTTPS, to ensure a secure channel.
-Moreover, every request must be an HTTP POST request, with the payload (body) being the actual message.
+This is the only way the \textbf{authentication} property of the protocol is kept, with regards to the server -- through a valid certificate.
+What is more, every request must be an HTTP POST request, with the payload (body) being the actual message.
 However, in order to communicate, the client and server must both understand the data they exchange.
 As such, this data must be serialized to a common format.
-TODO: discuss why JSON vs protobuf (backwards compatibility, debugging, javascript vs binary format speed); also, favors JSON.
-The Nigori specification strongly favors protobufs, yet mandates that servers must at least provide JSON (TODO: mb cite?).
-What is more, since the data that is sent can be arbitrary byte strings, some form of encoding is also required.
-For this, Nigori mandates that all of the actual payload pieces must be encoded using Base64.
 
-Together with these final notes, the messages now have a fully specified format, thus offering the \textbf{encoding} requirements of a well defined protocol.
+The protocol specification offers two alternatives for serialization, text based JSON or binary protobuf, each with their pros and cons.
+On the one hand, being a text based serialization method, JSON is directly available and understandable on any platform, while also greatly helping in the development process with cleartext debugging.
+Moreover, it offers objects which can be directly manipulated in Javascript, for a respective client.
+On the other hand, however, it requires data to be encoded such that certain characters are not available.
+The protocol demands Base64 encoding, yet this comes at the price of extra space used by data, after encoding.
+In contrast, using protobufs, the data is serialized in binary format, with increased performance.
+However, this requires the technology to be available for both clients and servers, which is not always the case.
+As such, while protobufs are favored, the server must always provide JSON.
+
+Together with these final notes, the messages have a fully specified format, thus offering the \textbf{encoding} requirements of a well defined protocol.
 Lastly, the functionality rules for each provided endpoint represent the overall \textbf{procedure} side of a protocol.
-Because our server uses a REST interface, the overall set of rules is not too complex, however, since each new request is stateless.
-Thus, as presented in the above figure, any message exchange can only be initiated by the client and will only receive one response from the server -- which will only carry payload on requests for getting information.
+Because our server uses a REST interface, the overall set of rules is not overly complex, since each new request is stateless.
+Thus, as presented in figure (TODO: ref figure), any message exchange can only be initiated by the client and will only receive one response from the server -- which will only carry payload on requests for getting information.
 
 \section{Choice of environment: Mirage and OCaml}
+TODO: see phrasing, based on intro.
 As previously mentioned, the research part of the thesis also involved working with relatively new technologies.
 To that end, we decided to use Mirage as a supporting backend for Nigori.
 This was interesting from the novelty perspective, as the system was well within an alpha stage of release.
-Thus, most parts of the system were constantly under ongoing development throughout the work done in this thesis.
+Thus, most parts of the system were considered quite stable, yet were still under development throughout the work done for this thesis.
 Hence, while this work was primarily focused on protocol analysis, a secondary objective was also a use case analysis for Mirage itself, and the ecosystem surrounding it.
-On a different note, this choice was also motivated by many practical aspects.
-Mirage was built to be a \textit{library operating system}.
-What this means is that, the application being developed can be packaged together with all the underlying functionality required from the actual operating system into a single \textit{unikernel} that can be directly deployed on top of hypervisors, such as Xen, on top of cloud infrastructure VMs.
-In turn, for Nigori, this means that we can target different platforms simply by building the application on top of Mirage.
 
-TODO: maybe add more...? discuss how low lines of code gives security benefits (fewer attack vectors) while OCaml type safety provides practical security guarantees, at no performance costs.
+On a different note, the choice of using Mirage was also motivated by many practical aspects.
+For starters, the system was built to be a \textit{library operating system}.
+What this means is that, any application being developed on top of it can be packaged together with all the underlying functionality required from the actual operating system into a single \textit{unikernel} that can be directly deployed on top of hypervisors, such as Xen, on top of cloud infrastructure VMs.
+As such, the resulting bundle has only the minimum required pieces of functionality.
+This increases the overall security by limiting the possible attack vectors for the application as a whole.
+TODO: more on libOS.
+TODO: Mirage libraries and targetting multiple platforms
 
-On a different note, one important choice that was made from the beginning of the project was that all the implementation work should be done in a functional programming language with a static type system.
+Another great benefit of using Mirage was that it, together with all of its supporting libraries, are writen primarily in OCaml.
+This was important, as, from the beginning of the project, we wanted the implementation work to be done in a functional programming language with a static type system -- hence OCaml was fitting.
 The motivations for this are two fold.
 On the one hand, this opens up the protocol implementation, or at least crucial underlying pieces of it, to formal verification, which can directly vouchsafe certain protocol assumptions.
 On the other hand, type systems directly provide the developer with a safety net, thus helping to ensure that the theoretical design of the protocol at hand is not involuntarily broken during implementation.
 Thus, abstract specifications of data and interactions can be turned into concrete data types and functions acting explicitly on them, with the language itself helping to enforce these constraints.
-Overall, this should help increase the overall security of the protocol, which, considering the ideology behind Nigori, was important.
-Moreover, together with the aforementioned principles of simplicity and modularity, such a language helps put the problem of protocol design and implementation into a development funnel style picture.
+Overall, this should help increase the overall security of the protocol, which, considering the ideology behind Nigori, is important.
+What is more, OCaml compiles down to bytecode, which allows all the type enforcement to happen at compile time.
+As such, after compilation, the type information can be removed, and, short of compiler bugs, this gives programs all the benefits of a type system, without a performance penalty.
+
+Moreover, together with the aforementioned principles of simplicity and modularity, such a language helps put the problem of protocol design and implementation into a development funnel style picture (TODO: ref picture).
+Thus, the base of the funnel consists of the many small individual pieces of protocol functionality, properly specified and potentially formally verified, guaranteed to offer the envisioned functionality, such as the cryptographic primitives in Nigori.
+The top of the funnel is represented by the broad spectrum of final deployments of the protocol, depending on the targeted platform.
+All of these would in a sense be variations, or specializations of the core of the protocol, the narrow waist of the funnel, which would represent the complete implementation of the protocol, achieved by modularly combining the functionality from lower down the funnel, in our language of choice, ready to be compiled away towards the needed platforms.
 
 TODO: add picture.
 
-Thus, the base of the funnel consists of the many (small) individual pieces of protocol functionality, properly specified and potentially formally verified, guaranteed to offer the envisioned functionality, such as the cryptographic primitives in Nigori.
-The top of the funnel is represented by the broad spectrum of final deployments of the protocol, depending on the targeted platform.
-All of these would in a sense be variations, or specializations of the core of the protocol, the narrow waist of the funnel, which would be represent the complete implementation of the protocol, achieved by modularly combining the functionality from lower down the funnel, in our language of choice, ready to be compiled away towards the needed platforms.
-
-TODO: refactor this as OCaml is a starting point, not a precise choice...turn around into, as Mirage was written in OCaml, this was a good place to start with, plus it fit the functional requirements.
-
-Considering both the requirement for a functional programming for implementation, as well as the fact that Mirage is written in OCaml, this made the choice of language relatively straightforward, as it would greatly help with integration work, since all the libraries the system provides would become directly available for an application developer.
-What is more, the development environment around Mirage consists of plenty of OCaml libraries adapted for direct use.
+One final great aspect of using Mirage as a development backend and OCaml as our language of choice is the ease of integration work.
+Mirage is set to support bindings for other languages, but OCaml works directly.
+Moreover, Mirage also comes with a package manager for OCaml which allows for certain libraries to be installed and used directly into applications.
 As such, we were able to leverage quite a great deal of functionality in engineering the Nigori implementation.
 For HTTP communication, we leveraged the \myref{ocaml-cohttp} library's client and server, which could be directly used either in a UNIX environment, or in a Mirage microkernel.
 With regards to the actual messages used in the communication, we used the \myref{atdgen} library, which allowed for \textit{Adjustable Type Definitions} to be written down and annotated, before processing and generating of corresponding OCaml types.
 What is more, the library also provided primitives for serializing and deserializing these types to and from JSON.
-Certain cryptographic building blocks were available using the OCaml \myref{cryptokit} library, which allowed for building all of the required primitives for Nigori.
-For a storage, a backend Object Relational Mapping (ORM) is also available, by using the \myref{ocaml-orm} library.
+Certain cryptographic building blocks were available using the \myref{cryptokit} library, thus contributing to the primitives required by Nigori.
+For storage, a backend Object Relational Mapping (ORM) is also available, by using the \myref{ocaml-orm} library.
 This allows for carefully crafted OCaml types to be persisted using SQLite, almost seamless to the developer, while also allowing application specific OCaml code running directly on said types, without having to handle raw SQL.
-Finally, through the use of the \myref{js\_of\_ocaml} library, we were able to also compile the OCaml client to Javascript, while functorizing the various pieces which were not directly available (such as the cryptography and HTTP client functionality) and replacing them with suitable Javascript library calls or implementations.
+Finally, through the use of the \myref{js\_of\_ocaml} library, we were able to also compile the OCaml client to Javascript, with appropriate adjustments.
+These are explained in more detail in the remainder of the thesis.
