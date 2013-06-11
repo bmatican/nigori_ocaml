@@ -3,7 +3,7 @@ Nigori, as a system, is basically an encrypted index--value store, built for the
 As such, the big picture consists of primarily two components: a client and a server.
 Nevertheless, due to the nature of the interactions between these two pieces, quite a sizeable chunk of code ends up being shared, particularly the communication and some of the encryption mechanics.
 This chapter is modeled after the actual implementation, showing the shared code, and the client and the server in separation, while also discussing the interactions between them.
-In addition to describing the base OCaml implementation, this chapter also provides about the separate compilation from OCaml code to JavaScript, along with both what it requires as well as what it entails.
+In addition to describing the base OCaml implementation, this chapter also provides details about the separate compilation from OCaml code to JavaScript, along with both what it requires, as well as what it entails.
 
 TODO: potentially add a figure or set of figures showing module dependencies and individual pieces, to help with direct naming.
 
@@ -11,7 +11,7 @@ TODO: potentially add a figure or set of figures showing module dependencies and
 The corresponding section of the codebase for shared code actually represents the core of the application.
 For the most part, components in this category are used by both the server and the client.
 As such, they have been implemented according to the simplicity and modularity principles mentioned in the previous chapter.
-Implicitly, this made using this core in both client and server, a straightforward venture.
+Implicitly, this made using this core afterwards, in both client and server, a straightforward venture.
 Moreover, it also allowed for an easy prototyping of the javascript version of the client, as well, since the core functionality was merely functorized to match the targeted platform.
 
 \subsection{Crypto}
@@ -20,29 +20,30 @@ These functions were built on top of the \myref{cryptokit} library for OCaml and
 
 As such, we had several base primitives that were required such as \myref{SHA-1}, \myref{HMAC}, \myref{AES}, \myref{DSA} and \myref{PBKDF}.
 We use \myref{SHA-1} for hashing purposes, both implicitly (such as in \myref{PBKDF}), but also explicitly (for example, on \myref{DSA} keys in messages).
-\myref{HMAC} is used solely on the encryption and decryption steps of indices, revisions or actual data.
-Similarly, \myref{DSA} is used primarily for authentication.
+\myref{HMAC} is used solely on the encryption and decryption steps of indices, revisions or actual data, to guarantee data integrity and validity.
+Similarly, \myref{DSA} is used primarily for authentication and verification.
 In the client, we create the public / private key pairs for a particular user.
 Afterwards, we generate and introduce a message signature, inside packets that are or contain an authentication message themselves.
 Finally, on the server, the signature is verified, accordingly, using the user's public key, that is stored as part of his identity.
 Lastly, \myref{PBKDF} is used, together with the users's master password, on the client, to generate specific keys to be used for user authentication, encryption, MACs or as initialization vectors in \myref{AES}.
 
-Of all of the above, \myref{SHA-1} and \myref{HMAC} came with the OCaml \myref{cryptokit} library.
-\myref{AES} was also provided, however, using it (in \myref{Enc} and \myref{EncDet}) required tweaking its parameters, as per the protocol specification.
+Of all of the above, \myref{SHA-1} and \myref{HMAC} came with the OCaml \myref{cryptokit} library and were used as--is.
+\myref{AES} was also provided, however, using it (in \myref{Enc} and \myref{EncDet} and their decryption couterparts) required tweaking some parameters, as per the protocol specification.
 The \myref{PBKDF} was directly implemented, as per its supporting RFC \cite{RFC2898}.
 In the case of \myref{DSA}, however, there were some complications.
 Since it required the use of multiple precision arithmetics, we decided to use a custom patch applied to the \myref{cryptokit} library, instead of building it from scratch.
 However, said patch would only work with keys of length up to 2048 bytes.
 Nevertheless, the Nigori specification makes use of fixed parameters for DSA, which need keys of size 3072.
-As such, the current implementation uses a fixed set of keys, incompatible with the previous implementations.
+This sparked a discussion about the rigidity of the actual specification, that we will come back to in Section \ref{sec:evaluation:protocol}.
+Ultimately, we decided for the current implementation to use a fixed set of keys, incompatible with the previous implementations.
 
 \subsection{Communication}
 In order for the server and client to communicate, they use a set of fixed format messages.
-These are explicitly described in the Nigori RFC and was previously outlined, so instead of going over them again, we shall instead explain how communication is made possible by showing what happens to messages from creation, to sending, to receiving and reading.
+These are explicitly described in the Nigori RFC and were previously outlined, so instead of going over them again, we shall instead explain how communication is made possible by showing what happens to messages from creation, to sending, receiving, and acting upon them.
 
 TODO: add picture of how an individual message is formed.
 
-The most important part to understand is that messages are structured.
+The most important part to understand is that these messages have a structure.
 What that means in the case of this implementation is that each message is represented by an OCaml type -- which in turn is auto--generated from an Adjustable Type Definition (ATD) annotated to produce valid OCaml types.
 As such, for example, for sending a message, first a type is filled up internally with the wanted data.
 Afterwards, the content of the message has to be properly encoded, for transmission.
@@ -53,24 +54,24 @@ The structure of the messages is quite intricately tied to the serialization for
 In the RFC, the description of the messages was given using protobuf specifications.
 However, protobufs do not currently have support for OCaml.
 As such, we reverted to the second serialization format that Nigori should always support, which is JSON.
-Thankfully, through a third party toolset and OCaml library, \myref{atdgen}, we were able to write up the messages as ATD.
+Thankfully, through a third party toolset and OCaml library, \myref{atdgen}, we were able to write up the messages as ATDs.
 These were then integrated into the build step of the project to automatically create the OCaml types and implicitly, the JSON serialization and deserialization functions required.
-Below we go through a small example of using ATDs and what they generate.
 
 TODO: add picture and comments
 
+The example in Figure (TODO: ref figure) shows what we had to write, together with what we would obtain and how we could use the types.
 The good part about this toolchain is that it allowed for each message to be crafted individually, yet be annotated with separate prefixes, so as to not generate multiple conflicting OCaml types with fields with the same name, in the same file.
 Also, the fact that the functions for going back and forth through JSON were directly accessible also made development easier.
-However, the toolchain also lacked something which was important in the context of this work, which is adding custom functions to be executed before serialization and, implicitly after deserialization.
-This was quite crucial, however, as we require Base64 encoding of all message content, before the serialization.
-Moreover, for those messages which also contain user data, encryption (or decryption) had to be performed.
+However, the toolchain also lacked something which was important in the context of this work, which is adding custom functions to be executed before serialization and, implicitly, after deserialization.
+This was quite crucial, however, as we require going through and from Base64 for all content that we send as JSON.
+Moreover, for those messages which also contain user data, encryption (or decryption) had to be performed, as well.
 As such, wrappers for most serializers and deserializers had to be created, with both encoding and encryption added manually for each message, accordingly.
-This was unfortunate, as, this process was repetitive and thus quite error prone.
+This was unfortunate, as this process was repetitive and thus error prone.
 
-In the end, however, this potential downside turned into an upside, as it helped focus more development effort into the core of the project.
+In the end, however, this potential downside ended up being an actual upside, as it helped focus more development effort into the core of the project.
 Thus, functionality was added in such a way that messages could become self contained for both sending and receiving.
-What this means is that, ultimately, the module that handles messages has, for each one, three functions: one for creating the message (giving it structure and adding the potential authentication pieces necessary) and two for serialization and deserialization.
-Hence, even the required encryption on uploading content and decryption on responses was encapsulated in the message implementation directly, as was the \myref{DSA} signature for the messages, even if they were themselves just a field in an encompassing message.
+What this means is that, ultimately, the module that handles messages has, for each one, three functions: one for creating the message (giving it structure and adding the potential authentication pieces necessary) and one for serialization and deserialization, respectively.
+These functions were designed to implicitly encapsulate all other expected pieces of functionality.
 
 \subsection{Extra}
 The most important undescribed piece of core functionality is the \myref{Nonce} module.
@@ -85,22 +86,21 @@ The configuration parts are, for example, the time interval for nonce lifetime o
 As for constants, these are primarily the ones used for cryptography.
 
 \section{Server}
-On the server side, there is a relatively simple and direct pipeline of actions taken (TODO: figure).
+On the server side, there is a relatively simple and direct pipeline of actions taken (TODO: ref figure).
 On startup, the server instantiates the internal configuration, the database to be used for storage, starts up the Mirage webserver to handle requests from clients and attaches the custom request handler to it.
-Afterwards, every request the server receives is first verified against the list of available endpoints.
-If the endpoint is valid, the request is forwarded to the handler, as is.
-Alternatively, the default handler action is issued, which is to respond with a \myref{404 Error} back to the client (TODO: figure).
-The handler is responsible for properly unpacking the client query and translating it into a command to the underlying storage and / or into an appropriate response back to the client.
+The handler is responsible for enforcing the protocol rules with regards to commands and structure.
+Thus, it must check for validity of both endpoints and data, then ultimately unpacking the client query and translating it into a command to the underlying storage and / or into an appropriate response back to the client.
 
 TODO: figure for server components
 
 TODO: figure for endpoint validation process
 
 \subsection{Request Handling}
-On the request handler side, every request at a valid endpoint is checked to be of according type (for now, just POST requests are accepted).
-If all is proper, the request body is unpacked.
-First the raw data is deserialized (at the moment, from JSON format).
-Then, the content is decoded from Base64.
+Figure (TODO: ref figure) shows the flow diagram of generic actions taken for processing an incoming request.
+Every request the server receives is first verified against the list of valid endpoints.
+If the endpoint is valid, the request is then checked to be of according type -- for now, just POST requests are accepted.
+The request body is afterwards deserialized, from the expected JSON format supported at the moment.
+Then, the content pieces are decoded from Base64.
 Afterwards, if authentication is required, the package signature is checked using DSA.
 Finally, if all these implicit message related checks are passed, the request is ultimately turned into a direct command to the underlying database.
 
@@ -141,7 +141,7 @@ For the \myref{register} endpoint, there is an \myref{HTTP 401} in case of inval
 Finally for the \myref{unregister} and \myref{put} endpoints, the special response is an \myref{HTTP 500} in case of internal failure, after users have been properly authenticated, as that should not be possible.
 
 \subsection{Storage}
-As far as storage was concerned, the server has several requirements.
+As far as storage is concerned, the server has several requirements.
 On the one hand, the server needs to hold both explicit user data, as well as certain pieces of metadata, for security purposes.
 For example, nonce and timestamp data is recorded in the system, on a per user basis, to prevent potential replay attacks.
 This goes in line with the requirements of the specification.
@@ -266,44 +266,29 @@ As far as functionality goes, the database module signature is split into four s
   \end{itemize}
 \end{description}
 
-Despite the ease that OCaml brought towards the modularity aspect of the implementation, there are still certain design differences between the actual in--memory storage version of the database and the physical storage one.
-Moreover, there were also certain issues and quirks that took a certain amount of time to either identify and / or get around.
-As such, we also include a discussion on these elements in what follows:
-\begin{description}
-  \item[Memory] the in--memory variant of the database makes use of the native library OCaml \myref{Hashtbl} datastructure.
-  As expected, this is a hash table with parameterized keys and values.
-  For this version of the database, we use an OCaml record to represent the internal \myref{type t}.
-  This record keeps track of the \myref{User} related data (public keys and hashes), the actual data (\myref{indices}, \myref{revisions}, myref{data}) and finally, the metadata (\myref{nonces}).
-  As previously mentioned, for security, we index the \myref{User} data, by the \myref{hash} and then the actual user data by instances of the \myref{User} module.
-  Lastly, the only non--trivial or unexpected choice is related to the storing of nonces.
-  While the \myref{Nonce} module allows for serializing instances to strings, OCaml does not provide a default \myref{Set} with O(1) access time.
-  In absence of such, we store nonces, on a per user basis into yet another \myref{Hashtbl}, indexed from actual \myref{Nonce} instances to boolean values.
-
-  \label{sec:implementation:sql}
-  \item[SQL] TODO: Quirks, problems and limitations.
-\end{description}
-
 \section{Client}
 For the purposes of this project, we have implemented a simplified version of the client.
 This was built on top of Mirage's \myref{ocaml-cohttp} HTTP client.
 It handles all of the mechanics the protocol describes, with the exception of proper client--side revisioning (conflict resolution).
-In the current version, it can be used though to send any of the messages normally available.
-These are, as per the specification, serialized down to JSON, as previously described, with the data properly encoded using Base64 encoding.
-Moreover, the security mechanisms described in the specifications are also applied, when required.
+In the current version, it can be used though to trigger all of the available functionality from the server.
+Moreover, the used messages are structured according to the specification, then, as previously described, serialized down to JSON, with the data properly encoded using Base64 encoding and encryption applied on all user data.
 
 Some interesting factors worth mentioning in the development of the client revolve around the actual communication and interaction between client and server.
 Due to the available REST interface on the server, the client has to be aware of the available endpoints.
-As such, this pushes these towards them being available in a more shared location.
-Moreover, on the message side, packing, signatures and verification, as well as serialization and deserialization were all pushed in the shared section, such that the messages would be self--contained, yet both the client and the server could access the respective functionality that they needed.
+As such, these become pushed towards shared code.
+Moreover, on the message side, packing, signatures and verification, encoding and decoding, as well as serialization and deserialization were all pushed in the shared section, such that the messages would be self--contained, yet both the client and the server could access the respective functionality that they needed.
 Overall, due to the complex set of actions that are performed on messages, getting the client to work properly was probably the most intensive part of the project.
-Despite the client in itself being relatively small, code--wise, that is purely due to the amount of code that was moved into the shared section, out of necessity.
+Nevertheless, the client in itself is relatively small, code--wise.
+However, this is purely due to the amount of code that was moved into the shared section, out of necessity and choices.
 
-The client required all components to work properly, both individually, and together, before it would function right and as such, most difficulties were experienced when attempting to put all the pieces properly together.
-To begin with, \myref{DSA} key generation had to work, and, as mentioned, this was quite cumbersome.
-Message structure had to be fixed and useful for both client queries and potential server responses, together with the respective JSON (de)serialization.
-Proper \myref{DSA} signatures on top of the respective messages and proof that the respective \myref{DSA} signature verification mechanism worked right needed to be accomplished.
-However, due to the proper methodology applied across the project, the integration work did not prove much hassle, from the side of what was being developed.
-Most problems that did arise came from the external tools being used, as previously detailed.
+In order to function properly, the client required all components to work properly, both individually and together.
+As such, most difficulties were experienced on the integration step of the work.
+The first problem was that the \myref{DSA} key generation had to work properly, and, as mentioned, this was quite cumbersome.
+Moreover, proper \myref{DSA} signatures on top of messages and proof that the respective signature verification mechanism worked right was needed.
+Lastly, message structure had to be fixed and useful for both client queries and potential server responses, together with all the beforementioned functionality encapsulated in the \myref{Message} module.
+However, thanks to the proper methodology applied across the project, the integration work proved quite successful, from the side of what was being developed.
+Most problems that did arise came from the external tools being used, from the faulty \myref{DSA} implementation, to the lacking functionalty in the \myref{ATD} generation library.
+We discuss some more aspects of the usability of these in Chapter \ref{chapter:evaluation}.
 
 \section{JavaScript implementation}
 TODO: Discuss how the semi--automated version of the client to JS is done: functorizing the various pieces which were not directly available (such as the cryptography and HTTP client functionality) and replacing them with suitable Javascript library calls or implementations.

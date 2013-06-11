@@ -5,7 +5,7 @@ We follow this up with a discussion on the choice of environment and tools, part
 Furthermore, we also discuss some of the testing aspects that were relevant to the proper analysis of the protocol and its implementation.
 On the other hand, we also provide a performance analysis of the system. TODO: add minor forward linking to what kind of things
 
-\section{Nigori Protocol}
+\section{Nigori Protocol} \label{sec:evaluation:protocol}
 As expected, working with a \wip protocol is a highly iterative task.
 What is more, there are many aspects that show themselves as potential areas of change.
 One of the main such areas was overall protocol specificity.
@@ -31,7 +31,7 @@ As such, instead of mandating DSA, having some mechanism to negotiate the protoc
 Such a mechanism already is in place for determining the serialization formats that both client and server can and should use.
 What is more, the Nigori specification also mandates the use of DSA with fixed internal parameters, that could be shared among the client and server libraries.
 While this is done for obvious security reasons, as choosing these parameters affects the strength of the algorithm, this nevertheless drastically reduces the options available, if, for some reason, this is not available on a targeted platform, such as our base OCaml implementation.
-TODO; discussion on flexibility vs working state or weak values...
+TODO; discussion on flexibility vs working state or weak values...we can send all parameters instead of just key or hash.
 
 \section{Testing}
 TODO: refactor the testing part here.
@@ -55,13 +55,29 @@ As such, many of them, on occasion, presented less than optimal behavior.
 Overall, in light of our work, much feedback was brought to the various pieces in the Mirage and OCaml ecosystem which were used.
 The most important parts are highlighted here.
 
-As such, while the \myref{ocaml-cohttp} library provided very mature and stable support for the required HTTP functionality, less could be said about the respective SQLite implementation of the storage layer, as previously mentioned in Section \ref{sec:implementation:sql}. TODO: reiterate
+As such, while the \myref{ocaml-cohttp} library provided very mature and stable support for the required HTTP functionality, less could be said about the respective SQLite implementation of the storage layer.
+
+TODO: reiterate this:
+
+Despite the ease that OCaml brought towards the modularity aspect of the implementation, there are still certain design differences between the actual in--memory storage version of the database and the physical storage one.
+Moreover, there were also certain issues and quirks that took a certain amount of time to either identify and / or get around.
+As such, we also include a discussion on these elements in what follows:
+\begin{description}
+  \item[Memory] the in--memory variant of the database makes use of the native library OCaml \myref{Hashtbl} datastructure.
+  As expected, this is a hash table with parameterized keys and values.
+  For this version of the database, we use an OCaml record to represent the internal \myref{type t}.
+  This record keeps track of the \myref{User} related data (public keys and hashes), the actual data (\myref{indices}, \myref{revisions}, myref{data}) and finally, the metadata (\myref{nonces}).
+  As previously mentioned, for security, we index the \myref{User} data, by the \myref{hash} and then the actual user data by instances of the \myref{User} module.
+  Lastly, the only non--trivial or unexpected choice is related to the storing of nonces.
+  While the \myref{Nonce} module allows for serializing instances to strings, OCaml does not provide a default \myref{Set} with O(1) access time.
+  In absence of such, we store nonces, on a per user basis into yet another \myref{Hashtbl}, indexed from actual \myref{Nonce} instances to boolean values.
+
+  \item[SQL] TODO: Quirks, problems and limitations.
+\end{description}
 
 Also, while arguably not directly related to Mirage, the respective library used for JSON serialization could have also used some improvements.
 Primarily, the library offered the ability to annotate the ATDs with extra information that would be used in either the JSON form, or the OCaml form.
 Some mechanism, such as pre and post serialization and deserialization hooks, could have helped a great deal with semi-automating the development process of the message formats.
-
-TODO: migrate DB discussion here
 
 TODO: some discussion about \myref{js\_of\_ocaml}.
 
