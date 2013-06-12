@@ -231,9 +231,9 @@ On a different note, the choice of using Mirage was also motivated by many pract
 For starters, the system was built to be a \textit{library operating system}.
 What this means is that, any application being developed on top of it can be packaged together with all the underlying functionality required from the actual operating system into a single \textit{unikernel} that can be directly deployed on top of hypervisors, such as Xen, on top of cloud infrastructure VMs.
 As such, the resulting bundle has only the minimum required pieces of functionality.
-This increases the overall security by limiting the possible attack vectors for the application as a whole.
+This increases the overall security by limiting the possible attack vectors for the application as a whole, as the system's Trusted Computing Base (TCB) becomes much smaller.
 TODO: more on libOS.
-TODO: Mirage libraries and targetting multiple platforms
+TODO: Mirage libraries and targetting multiple platforms.
 
 Another great benefit of using Mirage was that it, together with all of its supporting libraries, are writen primarily in OCaml.
 This was important, as, from the beginning of the project, we wanted the implementation work to be done in a functional programming language with a static type system -- hence OCaml was fitting.

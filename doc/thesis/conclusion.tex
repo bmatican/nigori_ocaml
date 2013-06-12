@@ -1,8 +1,17 @@
 \chapter{Conclusion and Future Work} \label{chapter:conclusion}
-As with our initial plans, a strong motivator in performing the work in this thesis was working with protocols, systems and tools which well still under development, to help asses their feasibility and ease of use.
-In this regard, working with the Mirage libraries and respective tools surrounding the project was quite interesting and offered a good deal of insights.
+The main result of the work performed in this thesis is a fully--fledged, working proof--of--concept implementation of the Nigori protocol in OCaml, powered by Mirage libraries, together with cross--platform compiled clients in both native bytecode and Javascript.
+Our evaluation shows that the main aspects of the protocol fall into good functioning norms for the main pieces of functionality provided.
+The HTTP capabilities of the Mirage webserver and client, combined with going through a Mac networking stack, yeald round trip times of 1 to 3 ms for requests on the same machine, thus proving minimal time constraints per request (TODO: reference web page load time averages).
+Moreover, for application liveliness, the client side encryption and decryption times are well within ms times, with \myref{AES} encryption of a 100 mb file being just under 60 ms.
+This shows that applications can integrate Nigori for storing user secrets withouth affecting client side responsiveness in any considerable fashion.
+Lastly, our server SQLite backend database proved to be quite storage efficient, taking under 1\% of the expected amount of space for high numbers (10000) of items.
+Moreover, query wise, without implicit indexes, we get query times of roughly 1 second for a table with 1 million items, which is well within expected norms for an SQL database (TODO: reference?).
+
+As with our initial plans, a strong motivator for the work presented in this thesis was working with both Nigori and Mirage, which can easily be marked as works still under development.
+As such, part of the experience of working with both was assessing the feasibility and usability of both.
+In this regard, working with the Mirage libraries and the respective tools surrounding the project was quite interesting and offered a good deal of insights.
 Most of the direct libraries involved in the project proved to be sufficiently mature for turning a protocol specification into a working, albeit proof--of--concept, implementation.
-Several of the more peripheral tools and libraries left aspects to be desired, however, that was somewhat to be expected, considering OCaml is not as much of a mainstream programming language, and, implicitly, that will be reflected on the support and third party available software.
+Several other tools and libraries, some as important as the storage backend SQLite ORM, left aspects to be desired, however, that was somewhat to be expected, considering OCaml is not as much of a mainstream programming language, and, implicitly, that will be reflected on the support and third party available software.
 
 Work on the Nigori protocol, per se, however, was much to expectations.
 As such, we were able to quickly iterate through the implementation of the protocol, until a working prototype became a reality.
@@ -10,9 +19,13 @@ Moreover, due to the way in which the underlying pieces were crafted, the code c
 Albeit, the cross-compilation step to achieve this did require some tweaking efforts, the fact that we were able to primarily write one single implementation, with abstracted pieces of functionality and then target it to a completely different platform, was yet again, a proof--of--concept that this is achievable.
 
 Nevertheless, the advantages of leveraging Mirage leave plenty of room for future work.
-The most important avenue to pursue being, of course, using Mirage for what it was primarily built for: unikernel deployment over a hypervisor.
-As such, Nigori can be bundled up, together with all its required pieces of functionality, into an application kernel and then deployed, as is, on cloud infrastructures.
-This would have the advantage of potentially greatly increasing server performance. TODO: relate to eval?
+The most important avenue to pursue is, of course, using Mirage for what it was primarily built for: a unikernel deployment over a hypervisor, such as Xen.
+As such, Nigori can be bundled up, together with all its required pieces of functionality, into an application kernel and then deployed, as is, on cloud infrastructures, such as Amazon's EC2.
+Albeit potentially a small improvement, this could, nonetheless, lower the amount of time spent by messages in the transmission medium, as the unikernel's network stack would be specialized to the application's requirements.
+Moreover, the overall efficiency of the underlying storage system could be enhanced by specializing the filesystem explicitly to the requirements of an SQL oriented database.
+This could overall help with the latency on the server side, considering a cloud deployment of Nigori.
+Moreover, as previously mentioned in Chapter \ref{chapter:background}, one of the main aspects of using Mirage is the minimization of the actual Trusted Computing Base.
+What this implicitly means is a hightened sense of security, as overall number of attack vectors are minimized to at best cover only the required aspects of an operating system that the developed application (Nigori) would require.
 
 Finally, as previously mentioned, the client was implemented in a restricted fashion, without support for the synchronization requirements that Nigori is meant to support.
 As such, for a full-fledged version of the protocol specification that side of the functionality needs to be added as well.
