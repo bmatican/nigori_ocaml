@@ -90,28 +90,94 @@ On the other hand, we realized it would also be important to have some analysis 
 
 \subsection{Storage}
 In order to properly test the overall behavior of the Nigori server and how much storage it consumes, we decided to analyze the persistent version of the server implementation, the one using SQLite.
-To do so appropriately, we filled the data store via \myref{/put} operations on the server.
-We varied both the total number of items to keep at any given time in the store, from 1 to 10000, by factors of ten, while also varying the individual items being saved as well.
-Since an item is defined by three components, an index, a revision and the actual data, we decided to fix two of these, the index and the revision, to some pre-determined size (20 bytes), as these should in a sense be metadata, and vary the size of the actual data.
-Thus, we go from 100 bytes of data, incrementally, by a factor of two, up to 1600 bytes of data.
+We hypothesized that the database engine would naturally consume roughly as much space as we actually contributed to it.
+As such, increasing the overall size of the data we insert into the database would lead to a matching increase in the overall amount of space taken by the database itself.
+To test this appropriately, we filled the data store through a program that made direct calls to the database.
+We varied both the total number of items to keep at any given time in the store, from 1 to 10000, by factors of ten, while also varying the size of the individual items being saved.
+Since an item is defined by three components, an index, a revision and the actual data, we decided to fix two of these, the index and the revision, to some pre-determined size (32 bytes), as these should in a sense be metadata.
+For the actual data, we initially experimented with small items, of the order of 100 bytes, to 1600 bytes, however, we noticed considerable bias at those sizes.
+As such, we decided to choose larger values to understand what was happening.
+We took five samples and varied the sizes by factors of two, starting from 4kb, to 64kb.
+The results are presented in Figure \ref{fig:storage}.
 
-We decided to start from a relatively low value, such that we have some potential interference between the index and revision sizes, which were fixed to small values.
-However, when encrypted through either \myref{Enc} or \myref{EncDet}, the sizes of each piece become significantly larger, as each becomes a concatenation of an \myref{AES} initialization vector, of 16 bytes, an actual \myref{AES} cypher text, which is padded to 16 bytes, and a respective HMAC of the cypher, bringing in about an extra 20 bytes.
+\begin{figure}
+\centering
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=1.1\linewidth]{images/storage_numbers}
+  \caption{Clustering by number of items.}
+\end{subfigure}%
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=1.1\linewidth]{images/storage_values}
+  \caption{Clustering by size of data.}
+\end{subfigure}
+\caption{Variation of storage requirements with number of items and size of data.}
+\label{fig:storage}
+\end{figure}
 
-TODO: add back of the hand calculation based on the above
+% \myfig{Variation of storage requirements with number of items and size of data.}{storage}{0.8} \label{fig:storage}
 
-TODO: add graph
+The graphs are log--log scale, as we are expecting the storage to vary proportionally to our factorization, keeping one parameter fixed.
+Thus, for example, doubling the size of the data while keeping the number of items fixed, we expected the storage requirements to double.
+After some simple calculations of expected values, we realized there is some apparent inconsistency.
+To that end, we also graphed the difference between our calculations and the actual data.
+We present two graphs of the same data, clustered once by the number of items and once by size of data, two show the linear increase more clearly in both cases.
 
-TODO: talk about results, interpret, hypothesis, expectations compared with calculations, potentially include a much bigger set of keys to show that trend eventually evens out.
+\begin{table}[H]
+  \centering
+  \begin{tabular}{|c| |*{5}{c|}}
+  \hline
+  \backslashbox{Items}{Size (kb)}  & 4 & 8 & 16 & 32 & 64 \\\hline
+  1 & \myss{11}{73.17} & \myss{11}{58.54} &\myss{11}{41.81} & \myss{11}{26.61} & \myss{11}{15.40} \\\hline
+  10 & \myss{13}{23.60} & \myss{13}{13.66} & \myss{14}{7.94} & \myss{15}{4.44} &\myss{15}{2.28} \\\hline
+  100 & \myss{17}{4.06} & \myss{17}{2.12} & \myss{26}{1.63} & \myss{42}{1.31} & \myss{42}{0.66}\\\hline
+  1000 & \myss{72}{1.70} &  \myss{72}{0.88} & \myss{157}{0.96} & \myss{324}{1.00} & \myss{324}{0.50}\\\hline
+  10000 &\myss{619}{1.46} & \myss{619}{0.75} & \myss{1461}{0.89} & \myss{3142}{0.97} & \myss{3142}{0.49} \\\hline
+  \end{tabular}
+  \caption{Table of differences between experimental and expected storage data (raw and percentages).}
+  \label{table:storage}
+\end{table}
+
+The raw difference (rounded to kbs) and the percentage it represents of the actual data is listed in Table \ref{table:storage}.
+To compute the difference, we took into consideration the pieces we use in the encryption mechanism of both index, revisions and values.
+As such, we have a 16 byte initialization vector, a 20 byte \myref{HMAC} hash and a cypher text generated by \myref{AES} which is always a multiple of 16 bytes (hence our selection of 32 byte index and revision).
+This gives us an overhead of 68 bytes for our choice of index and revision.
+As we were using the SQLite backend, we also needed to account for the issues that we had to bypass from the ORM.
+As such, per data item, we also keep, for foreign key mechanics, both a \myref{SHA-1} hash of the user's public key (16 bytes) and a reference to the actual index of the data (thus 68 bytes).
+
+Even with our predictions, we still see a considerable overhead at small numbers and data values, which we can attribute to the base requirements the ORM might have.
+As we increase the number of items, we see that, percentage wise, the difference drops significantly, to below 1\% values.
+We attribute those final inconcistencies again to ORM internals such as any database indexes and primary keying that might be happening in the background.
+
+The most important result, however, is the linear increase presented on our log--log graphs.
+This tells us that the database engine behaves as we expect and increasing either data size or number of items by a certain factor, triggers a similar increase in the overall storage, by the same factor.
 
 \subsection{Latency}
 This part of the analysis makes use of the data stores previously generated in the storage analysis, as those offer us content at various fill rates.
 As such, the evaluation is split into several parts.
 Initially, we were considering looking at both \myref{/put} and \myref{/get} operations, and how their latency response changes.
 However, we decided to take a step back and look at the big picture and the individual pieces of a request, before we proceed.
-Thus, every request can be split into three major time components: time spent on the client side (encryption and packaging of message), time spent on the medium of travel (to and from the server, in the internals of the HTTP library and in the kernel networking stack) and finally time spent on the server (unpacking the request, executing against the database, packing the response).
-This realization caused us to add modifications to the implementation, to be used for the latency evaluation part, by reporting the respective times.
+Thus, every request can be split into three major time components: time spent explicitly on the client side (encryption and packaging of message), time spent on the medium of travel (in the internals of the HTTP library, in the kernel networking stack and in transmission) and finally time spent on the server (unpacking the request, executing against the database, packing the response).
+This realization caused us to add modifications to the implementation, to be used for the latency evaluation part, by having both client and server report their respective times.
 Subsequently, this subsection analyzes these three components, separately.
+
+\paragraph{Server} ~\\
+Our first experiments used the previous storage data to issue \myref{/get} commands and just analyze the timing data we obtained.
+However, this made us realize that, for example, varying the number of items that the database contains does not affect the time spent on the medium, or on the client side, whatsoever.
+As such, we decided to use all of this data and instead, show how the server performs with regards to these requests.
+We decided to only execute \myref{/get} requests, instead of \myref{/put} requests, so as to not pollute the database content.
+Moreover, we wanted to execute a certain number of requests for each individual instance of parameters (number of items, size of data) of the database and subsequently obtain the mean and standard deviation of the times.
+Since we have collections with small numbers of items, we considered that issuing \myref{/put} requests would distrupt the results of our analysis, as the number of items would increase during tests.
+Figure \ref{fig:time:server} shows the results of our analysis.
+
+Bla.\label{fig:time:server}
+
+\paragraph{Medium} ~\\
+TODO:
+
+\paragraph{Client} ~\\
+TODO:
 
 TODO: client side of timing; AES encryption at various rates and sizes of data; DSA signature of varying sizes
 

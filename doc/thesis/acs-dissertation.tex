@@ -23,6 +23,8 @@
 \def\wordcount{TODO: 10,379}
 \def\wip{work--in--progress\xspace}
 
+\newcommand{\myss}[2]{\shortstack{#1 \\ (#2\%)}}
+
 \newcommand{\myref}[1]{\texttt{#1}}
 \newcommand{\myresult}[1]{\textbf{#1}}
 \newcommand{\myfig}[3]
@@ -36,9 +38,11 @@
 }
 
 \usepackage{epsfig,graphicx,parskip,setspace,tabularx,xspace}
+\usepackage{caption,subcaption}
 \usepackage{verbatim}
 \usepackage{hyperref}
 % \usepackage{placeins}
+\usepackage{diagbox}
 \usepackage{float}
 \restylefloat{table}
 

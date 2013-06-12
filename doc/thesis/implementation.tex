@@ -108,7 +108,6 @@ TODO: figure with data flow
 
 There is an almost one--to--one correlation between the endpoints, the communication messages and the storage system commands.
 However, there is something to be said individually about endpoints and the respective responses they can generate.
-Below you will find a table of all HTTP response status codes that the server will generate, followed by the correlation between actions and potential responses.
 
 % \FloatBarrier
 \begin{table}[H]
@@ -125,9 +124,11 @@ Below you will find a table of all HTTP response status codes that the server wi
     500 & Internal Server Error \\ \hline
   \end{tabular}
   \caption{Nigori HTTP response status codes and names.}
+  \label{table:http}
 \end{table}
 
-All endpoints reply with \myref{HTTP 200} if the issued command is successful.
+In table \ref{table:http} we show all HTTP response status codes that the server will generate, together with their usual entity names, for future reference as we go through the correlation between actions and potential responses.
+As such, the handler replies with \myref{HTTP 200} on all valid endpoints, if the issued command is successful.
 If an invalid endpoint is accessed, the server responds with \myref{HTTP 404}.
 If methods other than POST are used, an \myref{HTTP 405} is issued.
 In case of internal server inconsistencies (which are codepaths that should technically not be accessed), the response is an \myref{HTTP 500}.
