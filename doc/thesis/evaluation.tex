@@ -9,12 +9,13 @@ Lastly, we provide a performance analysis of the system, with regards to storage
 As expected, working with a \wip protocol is a highly iterative task in the sense that there are many aspects that show themselves as potential areas of change.
 One of the main such areas was overall protocol specificity.
 Initially, while going through the RFC, in an attempt to understand the protocol and implement pieces of it, in a bottom--up approach, there were plenty of parts of the protocol's working that were either under or poorly specified.
-The most explicit of them was the cryptography part.
-Many of the primitives required by Nigori, and particularly the exact ways in which they were to be used or combined, was presented in a difficult to interpret format.
+The most explicit of them was the cryptography section.
+At times, the primitives required by Nigori, and particularly the exact ways in which they were to be used or combined, was presented in a difficult to interpret format.
 For example, the exact working of \myref{PBKDF} was left completety to its supporting RFC.
 While this would seem natural for an RFC, the supporting document was not the easiest read to interpret and subsequently implement off of.
-Yet another example was the description for the deterministic version of content encryption, \myref{EncDet}, which was slightly misleading, in the sense that internally, it uses an \myref{HMAC} (which outputs 20 bytes) and then shrinks that to the fixed size of an \myref{AES} initialization vector (16 bytes, in the current implementation), by splitting up the \myref{HMAC} into pieces of the required size and applying xor among them, which was not directly apparent from the specification.
-Finally, the respective matching decryption primitives (as previously denoted by \myref{Dec} and \myref{DecDet}), are completely missing.
+Yet another example was the description for the deterministic version of content encryption, \myref{EncDet}, which was slightly misleading, in the sense that internally, it uses an \myref{HMAC} (which outputs 20 bytes) and then shrinks that to the fixed size of an \myref{AES} initialization vector (16 bytes, in the current implementation), by splitting up the \myref{HMAC} into pieces of the required size and applying xor among them.
+However, the exact working of this was not directly apparent from the specification.
+Finally, the respective matching decryption primitives (as previously denoted by \myref{Dec} and \myref{DecDet}), are completely missing from the specification.
 Nevertheless, most of these misunderstandings were resolved with direct communication with the RFC authors and access to the source code of the previous implementations, at specific points.
 
 On a different note, in light of the implementation work, one aspect of the protocol became apparent and feedback and changes were brought to it to accommodate: the imposed strictness.
@@ -26,70 +27,69 @@ Nevertheless, this does violate the \textbf{authentication} property of security
 However, we can argue that HTTPS certificates can also be faked, thus making this an attack vector that is peripheral to the protocol, per se.
 
 Another area where the specification is rigid is with regards to which cryptography parts are being used.
-For example, in our OCaml implementation, access to a proper, fully-working version of DSA, with support for key sized of up to the required 3072, was restricted.
+For example, in our OCaml implementation, access to a proper, fully-working version of DSA, with support for key sizes of up to the required 3072, was restricted.
 As such, instead of mandating DSA, having some mechanism to negotiate the protocol to be used, for example, for the signing of the content, could have been useful.
 Such a mechanism is already in place for determining the serialization formats that both client and server can and should use.
 What is more, the Nigori specification also mandates the use of DSA with fixed internal parameters, that could be shared among the client and server libraries.
 While this is done for obvious security reasons, as choosing these parameters affects the strength of the algorithm's working, this nevertheless leaves no options for platforms that do not have access to the mandated option.
 Ultimately, this is a matter of choice and debate, between the flexibility offered by some form of algorithm negotiation phase and the potential security issues that can arise from using weak algorithms or weak parameters.
-However, we believe that some form of middle-ground can be achieved, while also gauging and mandating a certain algorithmic strength of encryption.
+However, we believe that some form of middle--ground can be achieved, while also gauging and mandating a certain algorithmic strength of encryption.
 At the very least, the system could mediate algorithms and key sizes and subsequently pass on to the client the parameters it should use, if the server is aware of sensible defaults for the options the client has available.
 
 \section{Testing}
 Short of using formal verification tools for the intricate pieces of the Nigori protocol, we resorted to pure functional testing.
-As such, we took the respective library offered functionality as given and tested everything that was built on top of it accordingly.
-Each of the cryptographic primitives was tested individually.
-Furthermore, as per the client requirements, these primitives were also tested in combination and the results compared against running the same operations with external tools.
+For the most part, we tested every piece of functionality we were using, wheter provided by external libraries, built on top of them or built completely from scratch.
+For an added layer of checking, we used external tools for multiple sources of both input and output data for many of the functionality we were using, from encryption to serialization.
 
-Also, the corresponding encryption and decryption steps were tested to work well combined.
-Likewise, the respective JSON serialization and deserialization were also tested to perform as expected, when combined with the remainder of the system functionality (encoding / encryption).
+Moreover, aside from simple unit tests of each individual piece of functionality, we also wanted to ensure proper ingration testing.
+Thus, we tested most two--way functions, such as encryption and decryption, encoding and decoding, serialization and deserialization, thoroughly and in all combinations that were required for the application.
 
-Similarly, the server's database implementations for both the in--memory version and the SQLite backed one were tested in parallel, thanks to the module functorization capabilities of OCaml.
+Also, the server's database implementations for both the in--memory version and the SQLite backed one were tested in parallel, thanks to the module functorization capabilities of OCaml.
 Thus, all of the provided functionality from the database was tested, under the various scenarios in which messages could be exchanged and commands could be subsequently issued, in light of those exchanges.
 As such, proper test coverage was achieved on all code paths that were feasible, given the database interface provided.
 
 This methodology of performing both individual unit tests for the simple pieces of protocol workings, together with integration testing for the modularly composed pieces was consistent with our generic approach to protocol design.
-Furthermore, it proved fundamental when it came time to integrate the pieces into making the client and server interact.
+Furthermore, ensuring that testing was done at the same time as the general implementation proved crucial when it came time to integrate the pieces into making the client and server interact.
 
 \section{Mirage and OCaml Environment}
 As initially expected and desired, the systems and toolchains we were working with were not fully production ready.
 As such, many of them, on occasion, presented less than optimal behavior.
 Overall, in light of our work, much feedback was brought to the various pieces in the Mirage and OCaml ecosystem which were used.
-The most important parts are highlighted here.
+The most important parts are highlighted here and can be broken down in several categories: HTTP, storage, cryptography, serialization and Javascript conversion.
 
-As such, while the \myref{ocaml-cohttp} library provided very mature and stable support for the required HTTP functionality, less could be said about the respective SQLite implementation of the storage layer.
+By far, the most mature and reliable library proved to be the \myref{ocaml-cohttp}.
+From the HTTP client and server, to header breakdown, status codes or content encoding, everything worked very much as expected and desired.
 
-TODO: reiterate this:
-
-Despite the ease that OCaml brought towards the modularity aspect of the implementation, there are still certain design differences between the actual in--memory storage version of the database and the physical storage one.
-Moreover, there were also certain issues and quirks that took a certain amount of time to either identify and / or get around.
-As such, we also include a discussion on these elements in what follows:
+In contrast, one of the most difficult to work with areas was on the storage layer.
+Despite the ease that OCaml brought towards the modularity aspect of the implementation of the storage layer, there were still certain design differences between the actual in--memory storage version of the database and the physical storage one and they were primarily due to the nature of the \myref{ocaml-orm} library
+This came with certain issues and quirks that took a certain amount of time to both identify and / or get around.
+As such, we also include a small discussion on the differences between the two versions of the storage and highlight the findings with regards to the ORM.
 \begin{description}
   \item[Memory] the in--memory variant of the database makes use of the native library OCaml \myref{Hashtbl} datastructure.
   As expected, this is a hash table with parameterized keys and values.
-  For this version of the database, we use an OCaml record to represent the internal \myref{type t}.
-  This record keeps track of the \myref{User} related data (public keys and hashes), the actual data (\myref{indices}, \myref{revisions}, myref{data}) and finally, the metadata (\myref{nonces}).
-  As previously mentioned, for security, we index the \myref{User} data, by the \myref{hash} and then the actual user data by instances of the \myref{User} module.
-  Lastly, the only non--trivial or unexpected choice is related to the storing of nonces.
-  While the \myref{Nonce} module allows for serializing instances to strings, OCaml does not provide a default \myref{Set} with O(1) access time.
-  In absence of such, we store nonces, on a per user basis into yet another \myref{Hashtbl}, indexed from actual \myref{Nonce} instances to boolean values.
+  Implicitly, we create the two level index--value stores by using two levels of \myref{Hashtbls}.
+  The only peculiar note in the development of this came with the realization that OCaml does not provide a Set data structure with O(1) access time.
+  As such, for \myref{Nonce} data, we had to use yet another \myref{Hashtbl} to keep the metadata information.
 
   \item[SQL] TODO: Quirks, problems and limitations.
 \end{description}
 
-Also, while arguably not directly related to Mirage, the respective library used for JSON serialization could have also used some improvements.
-Primarily, the library offered the ability to annotate the ATDs with extra information that would be used in either the JSON form, or the OCaml form.
-Some mechanism, such as pre and post serialization and deserialization hooks, could have helped a great deal with semi-automating the development process of the message formats.
+With regards to JSON serialization, the library we had available proved to be quite flexible and gave us both internal types for structre, as well as the ability to autogenerate serializers and deserializers.
+Nevertheless, lacking the ability to add functions as hooks to be called pre or post either serialization operation, proved to be quite cumbersome and repetitive towards the use of the provided functionality.
+Primarily, we wanted to have some more enhanced ways of annotating fields in the \myref{ATD} such that we could automatically perform encoding or decoding and / or encryption or decryption, together with the respective serialization or deserialization.
+
+As far as cryptography goes, we covered most of the hassle experienced with \myref{DSA} in Chapter \ref{chapter:implementation}.
+Nevertheless, we wanted to note that we found it quite productive to actually experience problems with the protocol implementation due to the avaiable version of \myref{DSA} as it brought on the overall discussion into wheter the protocol should provide a more leniant yet flexible mechanism for algorithm mediation, or stick with rigidity for the sake of known security.
 
 TODO: some discussion about \myref{js\_of\_ocaml}.
 
 \section{Performance}
-For performance analysis, we decided we would primarily investigate three aspects of the system.
-On the one hand, we would analyze the overall storage footprint and how this evolves with both number of items, as well as respective size of the individual items.
+For performance analysis, we decided we would primarily investigate two aspects of the system.
+On the one hand, we would analyze the overall storage footprint and how this evolves with both number of items, as well as respective size of the individual items to be held in the data store.
 On the other hand, we realized it would also be important to have some analysis of the overall latency of performing requests -- such as \myref{/get} calls.
 
 \subsection{Storage}
-In order to properly test the overall behavior of the Nigori server and how much storage it consumes, we decided to analyze the persistent version of the server implementation, the one using SQLite.
+In order to properly test the overall behavior of the Nigori server and how much storage it consumes, we decided to analyze the persistent version of the server implementation-- the one using SQLite.
 We hypothesized that the database engine would naturally consume roughly as much space as we actually contributed to it.
 As such, increasing the overall size of the data we insert into the database would lead to a matching increase in the overall amount of space taken by the database itself.
 To test this appropriately, we filled the data store through a program that made direct calls to the database.
@@ -97,7 +97,7 @@ We varied both the total number of items to keep at any given time in the store,
 Since an item is defined by three components, an index, a revision and the actual data, we decided to fix two of these, the index and the revision, to some pre-determined size (32 bytes), as these should in a sense be metadata.
 For the actual data, we initially experimented with small items, of the order of 100 bytes, to 1600 bytes, however, we noticed considerable bias at those sizes.
 As such, we decided to choose larger values to understand what was happening.
-We took five samples and varied the sizes by factors of two, starting from 4kb, to 64kb.
+We took five samples and varied the sizes by factors of 2, starting from 4kb, to 64kb.
 The results are presented in Figure \ref{fig:storage}.
 
 \begin{figure}
@@ -116,11 +116,11 @@ The results are presented in Figure \ref{fig:storage}.
 \label{fig:storage}
 \end{figure}
 
-The graphs are log--log scale, as we are expecting the storage to vary proportionally to our factorization, keeping one parameter fixed.
+The graphs are logarithmic on both scales, as we are expecting the storage to vary proportionally to our factorization, keeping one parameter fixed.
 Thus, for example, doubling the size of the data while keeping the number of items fixed, we expected the storage requirements to double.
 After some simple calculations of expected values, we realized there is some apparent inconsistency.
 To that end, we also graphed the difference between our calculations and the actual data.
-We present two graphs of the same data, clustered once by the number of items and once by size of data, two show the linear increase more clearly in both cases.
+Ultimately, we chose to present two graphs of the same data, clustered once by the number of items and once by size of data, to show the linear, factor--wise increase more clearly in both cases.
 
 \begin{table}[H]
   \centering
@@ -137,7 +137,7 @@ We present two graphs of the same data, clustered once by the number of items an
   \label{table:storage}
 \end{table}
 
-The raw difference (rounded to kbs) and the percentage it represents of the actual data is listed in Table \ref{table:storage}.
+We also include in Table \ref{table:storage}, the raw data (with rounding) showing the difference between expectations and experimental data in space consumed, both in kbs, as well as in percentage from total.
 To compute the difference, we took into consideration the pieces we use in the encryption mechanism of both index, revisions and values.
 As such, we have a 16 byte initialization vector, a 20 byte \myref{HMAC} hash and a cypher text generated by \myref{AES} which is always a multiple of 16 bytes (hence our selection of 32 byte index and revision).
 This gives us an overhead of 68 bytes for our choice of index and revision.
@@ -145,48 +145,85 @@ As we were using the SQLite backend, we also needed to account for the issues th
 As such, per data item, we also keep, for foreign key mechanics, both a \myref{SHA-1} hash of the user's public key (16 bytes) and a reference to the actual index of the data (thus 68 bytes).
 
 Even with our predictions, we still see a considerable overhead at small numbers and data values, which we can attribute to the base requirements the ORM might have.
-As we increase the number of items, we see that, percentage wise, the difference drops significantly, to below 1\% values.
-We attribute those final inconcistencies again to ORM internals such as any database indexes and primary keying that might be happening in the background.
-
-The most important result, however, is the linear increase presented on our log--log graphs.
+However, as we increase the number of items, we see that, percentage wise, the difference drops significantly, to below 1\% values, which goes to prove our hypothesis.
 This tells us that the database engine behaves as we expect and increasing either data size or number of items by a certain factor, triggers a similar increase in the overall storage, by the same factor.
+We attribute the final inconcistencies to ORM internals such as database indexes and primary keying that might be happening in the background.
 
 \subsection{Latency}
-This part of the analysis makes use of the data stores previously generated in the storage analysis, as those offer us content at various fill rates.
-As such, the evaluation is split into several parts.
-Initially, we were considering looking at both \myref{/put} and \myref{/get} operations, and how their latency response changes.
-However, we decided to take a step back and look at the big picture and the individual pieces of a request, before we proceed.
-Thus, every request can be split into three major time components: time spent explicitly on the client side (encryption and packaging of message), time spent on the medium of travel (in the internals of the HTTP library, in the kernel networking stack and in transmission) and finally time spent on the server (unpacking the request, executing against the database, packing the response).
-This realization caused us to add modifications to the implementation, to be used for the latency evaluation part, by having both client and server report their respective times.
+TODO: MacBook Pro system specs: CPU, memory, SSD, network...
+
+For most of this part, we tried to either use the initial data stores we built on the previous experiment, or adapt the tools we created to generate data more suitable for any special experiments.
+Nevertheless, having first covered the storage part was crucial, as the methodology of using different fill rates and data sizes was highly relevant for engineering most experiments that targeted latency.
+Our first latency experiments used the previous storage data to issue \myref{/get} commands and just analyze the timing data we obtained.
+However, this made us realize that, for example, varying the number of items that the database contains does not affect the time spent on the medium, or on the client side, whatsoever.
+
+Thus, we decided to take a step back and look at the big picture and the individual pieces of a request, before we proceed.
+Every request can be split into three major temporal components: time spent explicitly on the client side (encryption and packaging of message), time spent on the medium of travel (in the internals of the HTTP library, in the kernel networking stack and in transmission) and finally time spent on the server (unpacking the request, executing against the database, packing the response).
+This realization caused us to add modifications to the implementation, that would be used for the latency evaluation part, by having both client and server report their respective time breakdown.
 Subsequently, this subsection analyzes these three components, separately.
+For the most part, in each of the following timing experiments, we chose to repeat the procedure a fixed number of times (100) and obtain the mean and standard deviation data from the results.
+This would help ensure the fairness of the experiments, while also showing the reliability of the pieces we were examining.
 
 \paragraph{Server} ~\\
-Our first experiments used the previous storage data to issue \myref{/get} commands and just analyze the timing data we obtained.
-However, this made us realize that, for example, varying the number of items that the database contains does not affect the time spent on the medium, or on the client side, whatsoever.
-As such, we decided to use all of this data and instead, show how the server performs with regards to these requests.
-We decided to only execute \myref{/get} requests, instead of \myref{/put} requests, so as to not pollute the database content.
-Moreover, we wanted to execute a certain number of requests for each individual instance of parameters (number of items, size of data) of the database and subsequently obtain the mean and standard deviation of the times.
-Since we have collections with small numbers of items, we considered that issuing \myref{/put} requests would distrupt the results of our analysis, as the number of items would increase during tests.
-Figure \ref{fig:server} shows the results of our analysis.
+The server time is primarily affected by database query times.
+As such, wwe decided to do an analysis of the \myref{ORM} we were using.
+Moreover, we realized that we should only execute \myref{/get} requests, instead of \myref{/put} requests, so as to not distrupt the database content.
+The alternative would have been to time each \myref{/put} request and then bring the database back to the previous state, on every instance of testing, which we considered needlessly complicated, for now.
+Should the system prove to be more write intensive, instead of read intensive, the respective analysis can be performed similarly to this one.
 
-Bla.\label{fig:server}
+Initially, we tested against multiple sizes of data, yet we soon realized that the impact sizes of individual data items has on overall query time is not nearly as important as the number of items in the database.
+As such, we fixed the size of our content in the setup phase.
+We chose data items to be 64 bytes (multiple of 16, for \myref{AES}), while keeping the previous sizes of 32 bytes for index and revision.
+Similarly, size--wise, the previously mentioned overhead also applied, however, as mentioned, size of data has minimal impact on query time.
+We mentione these again simply for reproducibility.
+
+Thus, the focus of our analysis was first filling four databases with items from 1000 to 1000000 -- by factors of 10.
+Afterwards, on the resulting databases, we performed queries for one random data item, so as to be sure to not hit any form of system cache.
+We initially wanted to do client side \myref{/get} requests, however, we realized that for the purpose of query latency, server side database queries would suffice.
+We were naturally expecting that the time for these requests would be proportional with the size of the database, yet also, that the time factor would be smaller than the space factor.
+Figure \ref{fig:server} shows the results of our analysis.
+It is important, for timing aspects, to restate that all testing was done on a MacBook Pro, with SSD as a main storage unit.
+
+\myfig{Time spent on database by \myref{/get} requests.}{server}{1}
+
+As expected, when plotting the y scale logarithmically, we get a linear growth.
+Moreover, also as predicted, the increase is sublinear, with a factor of 10 increase in number of items resulting in less than a factor of 10 amplification of time taken for request.
+This is natural, considering that most database implementations use some form of sub--linear indexing data structures, such as B--trees.
+However, the increase we do see, moving from 1000 items to 1000000 (three factors), seems to be still be quite considerable (two factors).
+This is probably to be attributed to the internal implementation of the library in use.
 
 \paragraph{Medium} ~\\
-Initially when we ran the experiments given the previous storage data, we saw very little justifiable differences between the timing values we were observing.
-Moreover, we knew that the number of items in the database would not affect the time it would take to take the package through the HTTP library, the kernel and ultimately the transmission environment.
+Initially, we ran timing experiments given the storage data from our first experiment, for varied sizes and item numbers.
+However, we saw very little justifiable differences between the medium timing values we were observing.
+Moreover, we knew that the number of items in the database would not affect the time it would take for the package to go through the HTTP library, the kernel and ultimately the transmission environment.
 As such, we created a new set of data, featuring a database with only one item, yet varying the size of the data each time.
-We engineered the size to vary from 1kb to 100000kb (roughly 100mb) so that we could test the impact, and, once again, we issued and timed 100 sequential \myref{/get} requests.
-We did, however, make one more choice with regards to setup, which was to run the tests with the client and server on the same machine, thus, at least theoretically, eliminating the time spent in transmission.
-Moreover, we made sure that network activity was shutdown as best as possible from the test machine.
-As such, we expected that the variations in time to become minimal, yet to do at least appear linearly increasing with the amount of data.
+We engineered the size to vary by a factor of 10, from 1kb to 100000kb (roughly 100mb) so that we could test the impact, and, once again, we issued and timed 100 sequential \myref{/get} requests.
+We did, however, make one more choice with regards to setup, which was to run the tests with the client and server on the same machine.
+Thus, at least theoretically, we should be eliminating the time spent in transmission.
+To ensure that, we shutdown network activity as best as possible from the test machine.
+In the end, we expected that the variations in time to become minimal, yet to do at least appear linearly increasing with the amount of data.
 The results are presented in Figure \ref{fig:medium}.
 
-\myfig{Time spent by \myref{/get} requests in transmission.}{medium}{0.8}
+\myfig{Time spent by \myref{/get} requests in transmission.}{medium}{1}
 
-As we expected, computing the mean and standard deviation of the values, we see an almost constant line, across the various sizes of data, with a slight tendancy towards linear increase
+As we expected, computing the mean and standard deviation of the values, we see an almost constant line, across the various sizes of data, with a slight tendancy towards linear increase.
 However, there is a great deal of variance among the time taken by these requests.
 
 \paragraph{Client} ~\\
+On the client side, most time is naturally spent in preparing the message for transmission.
+However, there are several components of this that we could analyze: encryption of data (\myref{AES}), signing of content (\myref{DSA}) or serialization of content (JSON).
+Now, every message must be serialized to JSON, yet this operation should be relatively trivial from a computational perspective.
+Alternatively, every message requiring authentication needs a signature on the overall content, which would make \myref{DSA} an interesting point of analysis.
+However, since our library could not generate the size of keys that the protocol specification requires, we decided that an analysis on speed of signing would be redundant.
+As such, the focus of our experiment became \myref{AES}.
+Aside from the fact that this could be directly compared to direct counterparts in other languages, for example, it was also highly relevant to Nigori, since every message that contains an index, a revision, or a piece of data must encrypt it and some messages contain more than one of these.
+
+As such, we focused our experiment on the speed of encryption using \myref{AES}.
+We fixed the required 16 byte initialization vector and the 32 byte secret key and we decided to vary the size of the plaintext data to be encrypted.
+Since this was a purely computational effort, we decided to use data from 1 kb in size, to 100000 kb (approx. 100 mb), varying it by factors of 10, to simulate what would happen if users would upload actual data files.
+The expected result was that, naturally, we would see a proportional increase of time required for computation.
+However, we were also interested in the raw numbers of what it would actually take to encrypt content of various sizes.
+Once again, for good metric, we ran each batch of experiments 100 times.
 
 Figure \ref{fig:aes} shows the results of our experiments in two formats of the data.
 The first one is in linear scale, to be able to understand the exact timings involved.
@@ -208,6 +245,10 @@ The other version is in logarithmic scale, to be able to get a big picture inter
 \label{fig:aes}
 \end{figure}
 
-TODO: client side of timing; AES encryption at various rates and sizes of data; DSA signature of varying sizes
+As we can see, the results support our expectations, given the linear nature of the curve, in the log--scale graph.
+Moreover, with minor exceptions, the time variance seems to be proportional on all levels of data size.
+This shows that the library has a consistent and reliable behaviour.
+Also, even at roughly 100 mb files, the encryption step would still take less than 60ms, which is still considerably less than browser page load times (order of seconds), for example.
+Thus, application responsiveness would not be particularly bottlenecked on the time spent on security aspects, inside Nigori.
 
-TODO: server side of timing; DSA verification times?; database query times; discussion of means and increase with respect to both number of items and size of data
+TODO: potentially show similar results for decryption
