@@ -187,7 +187,26 @@ As we expected, computing the mean and standard deviation of the values, we see 
 However, there is a great deal of variance among the time taken by these requests.
 
 \paragraph{Client} ~\\
-TODO:
+
+Figure \ref{fig:aes} shows the results of our experiments in two formats of the data.
+The first one is in linear scale, to be able to understand the exact timings involved.
+The other version is in logarithmic scale, to be able to get a big picture interpretation of the encryption times.
+
+\begin{figure}
+\centering
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=1.1\linewidth]{images/aes_linear}
+  \caption{Linear y--scale.}
+\end{subfigure}%
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=1.1\linewidth]{images/aes_log}
+  \caption{Logarithmic y--scale.}
+\end{subfigure}
+\caption{Time spent in client on \myref{AES}.}
+\label{fig:aes}
+\end{figure}
 
 TODO: client side of timing; AES encryption at various rates and sizes of data; DSA signature of varying sizes
 
