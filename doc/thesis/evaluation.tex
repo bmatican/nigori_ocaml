@@ -116,8 +116,6 @@ The results are presented in Figure \ref{fig:storage}.
 \label{fig:storage}
 \end{figure}
 
-% \myfig{Variation of storage requirements with number of items and size of data.}{storage}{0.8} \label{fig:storage}
-
 The graphs are log--log scale, as we are expecting the storage to vary proportionally to our factorization, keeping one parameter fixed.
 Thus, for example, doubling the size of the data while keeping the number of items fixed, we expected the storage requirements to double.
 After some simple calculations of expected values, we realized there is some apparent inconsistency.
@@ -169,18 +167,28 @@ As such, we decided to use all of this data and instead, show how the server per
 We decided to only execute \myref{/get} requests, instead of \myref{/put} requests, so as to not pollute the database content.
 Moreover, we wanted to execute a certain number of requests for each individual instance of parameters (number of items, size of data) of the database and subsequently obtain the mean and standard deviation of the times.
 Since we have collections with small numbers of items, we considered that issuing \myref{/put} requests would distrupt the results of our analysis, as the number of items would increase during tests.
-Figure \ref{fig:time:server} shows the results of our analysis.
+Figure \ref{fig:server} shows the results of our analysis.
 
-Bla.\label{fig:time:server}
+Bla.\label{fig:server}
 
 \paragraph{Medium} ~\\
-TODO:
+Initially when we ran the experiments given the previous storage data, we saw very little justifiable differences between the timing values we were observing.
+Moreover, we knew that the number of items in the database would not affect the time it would take to take the package through the HTTP library, the kernel and ultimately the transmission environment.
+As such, we created a new set of data, featuring a database with only one item, yet varying the size of the data each time.
+We engineered the size to vary from 1kb to 100000kb (roughly 100mb) so that we could test the impact, and, once again, we issued and timed 100 sequential \myref{/get} requests.
+We did, however, make one more choice with regards to setup, which was to run the tests with the client and server on the same machine, thus, at least theoretically, eliminating the time spent in transmission.
+Moreover, we made sure that network activity was shutdown as best as possible from the test machine.
+As such, we expected that the variations in time to become minimal, yet to do at least appear linearly increasing with the amount of data.
+The results are presented in Figure \ref{fig:medium}.
+
+\myfig{Time spent by \myref{/get} requests in transmission.}{medium}{0.8}
+
+As we expected, computing the mean and standard deviation of the values, we see an almost constant line, across the various sizes of data, with a slight tendancy towards linear increase
+However, there is a great deal of variance among the time taken by these requests.
 
 \paragraph{Client} ~\\
 TODO:
 
 TODO: client side of timing; AES encryption at various rates and sizes of data; DSA signature of varying sizes
-
-TODO: on the wire timing; discussion about HTTP layer in mirage libs; talk about kernel networking stack and respective stddev in data; explicit comments on variation with size of data; note on use of same machine and implicit time on wire being close to 0
 
 TODO: server side of timing; DSA verification times?; database query times; discussion of means and increase with respect to both number of items and size of data
