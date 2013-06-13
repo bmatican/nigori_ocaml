@@ -1,7 +1,7 @@
 \chapter{Conclusion and Future Work} \label{chapter:conclusion}
 The main result of the work performed in this thesis is a fully--fledged, working proof--of--concept implementation of the Nigori protocol in OCaml, powered by Mirage libraries, together with cross--platform compiled clients in both native bytecode and Javascript.
 Our evaluation shows that the main aspects of the protocol fall into good functioning norms for the main pieces of functionality provided.
-The HTTP capabilities of the Mirage webserver and client, combined with going through a Mac networking stack, yeald round trip times of 1 to 3 ms for requests on the same machine, thus proving minimal time constraints per request (TODO: reference web page load time averages).
+The HTTP capabilities of the Mirage webserver and client, combined with going through a Mac networking stack, yield round trip times of 1 to 3 ms for requests on the same machine, thus proving minimal time constraints per request (TODO: reference web page load time averages).
 Moreover, for application liveliness, the client side encryption and decryption times are well within ms times, with \myref{AES} encryption of a 100 mb file being just under 60 ms.
 This shows that applications can integrate Nigori for storing user secrets withouth affecting client side responsiveness in any considerable fashion.
 Lastly, our server SQLite backend database proved to be quite storage efficient, taking under 1\% of the expected amount of space for high numbers (10000) of items.
