@@ -129,7 +129,7 @@ However, there is something to be said individually about endpoints and the resp
   \label{table:http}
 \end{table}
 
-In table \ref{table:http} we show all HTTP response status codes that the server will generate, together with their usual entity names, for future reference as we go through the correlation between actions and potential responses.
+In Table \ref{table:http} we show all HTTP response status codes that the server will generate, together with their usual entity names, for future reference as we go through the correlation between actions and potential responses.
 In Figure \ref{fig:pipeline} we show data flow chart of how requests are processed internally.
 As such, the handler replies with \myref{HTTP 200} on all valid endpoints, if the issued command is successful.
 If an invalid endpoint is accessed, the server responds with \myref{HTTP 404}.
@@ -142,7 +142,7 @@ For the endpoints that would get back information, such as \myref{get}, \myref{g
 For the \myref{register} endpoint, there is an \myref{HTTP 401} in case of invalid DSA key data, or an \myref{HTTP 409} for trying to register a user with an already registered public key.
 Finally for the \myref{unregister} and \myref{put} endpoints, the special response is an \myref{HTTP 500} in case of internal failure, after users have been properly authenticated, as that should not be possible.
 
-\myfig{Data flow chart of request processing.}{pipeline}{1}
+\myfig{Data flow chart of request processing.}{pipeline}{0.7}
 
 \subsection{Storage}
 As far as storage is concerned, the server has several requirements.
