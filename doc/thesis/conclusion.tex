@@ -24,8 +24,9 @@ As such, Nigori can be bundled up, together with all its required pieces of func
 Albeit potentially a small improvement, this could, nonetheless, lower the amount of time spent by messages in the transmission medium, as the unikernel's network stack would be specialized to the application's requirements.
 Moreover, the overall efficiency of the underlying storage system could be enhanced by specializing the filesystem explicitly to the requirements of an SQL oriented database.
 This could overall help with the latency on the server side, considering a cloud deployment of Nigori.
-Moreover, as previously mentioned in Chapter \ref{chapter:background}, one of the main aspects of using Mirage is the minimization of the actual Trusted Computing Base.
-What this implicitly means is a hightened sense of security, as overall number of attack vectors are minimized to at best cover only the required aspects of an operating system that the developed application (Nigori) would require.
+Moreover, as previously mentioned in Chapter \ref{chapter:background}, one of the main aspects of using Mirage is the minimization of the TCB.
+What this implicitly means is a hightened sense of security, as overall number of attack vectors are minimized to at best cover only the required aspects of an operating system that Nigori would require.
 
 Finally, as previously mentioned, the client was implemented in a restricted fashion, without support for the synchronization requirements that Nigori is meant to support.
-As such, for a full-fledged version of the protocol specification that side of the functionality needs to be added as well.
+As such, for a full version of the implementation, that side of the functionality needs to be added as well.
+Moreover, many of the aspects that we found that the Nigori specification could be improved on, such as adding means of negotiating algorithms for content signing, are as well avenues for potential future developments.
