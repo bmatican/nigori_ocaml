@@ -1,0 +1,250 @@
+Hit endpoint: /get
+SERVER: 0.005663
+conn 1 closed
+CLIENT: 0.000572
+WIRE: 0.008318
+Hit endpoint: /get
+SERVER: 0.003132
+conn 2 closed
+CLIENT: 0.000394
+WIRE: 0.005297
+Hit endpoint: /get
+SERVER: 0.004313
+conn 3 closed
+CLIENT: 0.000561
+WIRE: 0.006526
+Hit endpoint: /get
+SERVER: 0.004868
+conn 4 closed
+CLIENT: 0.000579
+WIRE: 0.007254
+Hit endpoint: /get
+SERVER: 0.004338
+conn 5 closed
+CLIENT: 0.000553
+WIRE: 0.006618
+Hit endpoint: /get
+SERVER: 0.004286
+conn 6 closed
+CLIENT: 0.000562
+WIRE: 0.006612
+Hit endpoint: /get
+SERVER: 0.004644
+conn 7 closed
+CLIENT: 0.000388
+WIRE: 0.006615
+Hit endpoint: /get
+SERVER: 0.002988
+conn 8 closed
+CLIENT: 0.000550
+WIRE: 0.005380
+Hit endpoint: /get
+SERVER: 0.004300
+conn 9 closed
+CLIENT: 0.000566
+WIRE: 0.006610
+Hit endpoint: /get
+SERVER: 0.002878
+conn 10 closed
+CLIENT: 0.000551
+WIRE: 0.005188
+Hit endpoint: /get
+SERVER: 0.004412
+conn 11 closed
+CLIENT: 0.000387
+WIRE: 0.006473
+Hit endpoint: /get
+SERVER: 0.003944
+conn 12 closed
+CLIENT: 0.000384
+WIRE: 0.006147
+Hit endpoint: /get
+SERVER: 0.003619
+conn 13 closed
+CLIENT: 0.000381
+WIRE: 0.005639
+Hit endpoint: /get
+SERVER: 0.003944
+conn 14 closed
+CLIENT: 0.000555
+WIRE: 0.006144
+Hit endpoint: /get
+SERVER: 0.002867
+conn 15 closed
+CLIENT: 0.000385
+WIRE: 0.004789
+Hit endpoint: /get
+SERVER: 0.004377
+conn 16 closed
+CLIENT: 0.000385
+WIRE: 0.006600
+Hit endpoint: /get
+SERVER: 0.003326
+conn 17 closed
+CLIENT: 0.000602
+WIRE: 0.005675
+Hit endpoint: /get
+SERVER: 0.004184
+conn 18 closed
+CLIENT: 0.000384
+WIRE: 0.006202
+Hit endpoint: /get
+SERVER: 0.003365
+conn 19 closed
+CLIENT: 0.000578
+WIRE: 0.005751
+Hit endpoint: /get
+SERVER: 0.004509
+conn 20 closed
+CLIENT: 0.000557
+WIRE: 0.006787
+Hit endpoint: /get
+SERVER: 0.003239
+conn 21 closed
+CLIENT: 0.000576
+WIRE: 0.005684
+Hit endpoint: /get
+SERVER: 0.003845
+conn 22 closed
+CLIENT: 0.000587
+WIRE: 0.006068
+Hit endpoint: /get
+SERVER: 0.003132
+conn 23 closed
+CLIENT: 0.000390
+WIRE: 0.005360
+Hit endpoint: /get
+SERVER: 0.002973
+conn 24 closed
+CLIENT: 0.000528
+WIRE: 0.005340
+Hit endpoint: /get
+SERVER: 0.004068
+conn 25 closed
+CLIENT: 0.000379
+WIRE: 0.005993
+Hit endpoint: /get
+SERVER: 0.003225
+conn 26 closed
+CLIENT: 0.000386
+WIRE: 0.005284
+Hit endpoint: /get
+SERVER: 0.004371
+conn 27 closed
+CLIENT: 0.000382
+WIRE: 0.006340
+Hit endpoint: /get
+SERVER: 0.004072
+conn 28 closed
+CLIENT: 0.000442
+WIRE: 0.006625
+Hit endpoint: /get
+SERVER: 0.003984
+conn 29 closed
+CLIENT: 0.000570
+WIRE: 0.006134
+Hit endpoint: /get
+SERVER: 0.004357
+conn 30 closed
+CLIENT: 0.000580
+WIRE: 0.006641
+Hit endpoint: /get
+SERVER: 0.003171
+conn 31 closed
+CLIENT: 0.000575
+WIRE: 0.005103
+Hit endpoint: /get
+SERVER: 0.004657
+conn 32 closed
+CLIENT: 0.000381
+WIRE: 0.006675
+Hit endpoint: /get
+SERVER: 0.004363
+conn 33 closed
+CLIENT: 0.000377
+WIRE: 0.006326
+Hit endpoint: /get
+SERVER: 0.004282
+conn 34 closed
+CLIENT: 0.000603
+WIRE: 0.006718
+Hit endpoint: /get
+SERVER: 0.003321
+conn 35 closed
+CLIENT: 0.000377
+WIRE: 0.005443
+Hit endpoint: /get
+SERVER: 0.004655
+conn 36 closed
+CLIENT: 0.000555
+WIRE: 0.006944
+Hit endpoint: /get
+SERVER: 0.005091
+conn 37 closed
+CLIENT: 0.000388
+WIRE: 0.007077
+Hit endpoint: /get
+SERVER: 0.003910
+conn 38 closed
+CLIENT: 0.000592
+WIRE: 0.006266
+Hit endpoint: /get
+SERVER: 0.002930
+conn 39 closed
+CLIENT: 0.000560
+WIRE: 0.005337
+Hit endpoint: /get
+SERVER: 0.004795
+conn 40 closed
+CLIENT: 0.000375
+WIRE: 0.007869
+Hit endpoint: /get
+SERVER: 0.003534
+conn 41 closed
+CLIENT: 0.000443
+WIRE: 0.006020
+Hit endpoint: /get
+SERVER: 0.004207
+conn 42 closed
+CLIENT: 0.000556
+WIRE: 0.006523
+Hit endpoint: /get
+SERVER: 0.004843
+conn 43 closed
+CLIENT: 0.000526
+WIRE: 0.009080
+Hit endpoint: /get
+SERVER: 0.003997
+conn 44 closed
+CLIENT: 0.000394
+WIRE: 0.005979
+Hit endpoint: /get
+SERVER: 0.002556
+conn 45 closed
+CLIENT: 0.000569
+WIRE: 0.004770
+Hit endpoint: /get
+SERVER: 0.002687
+conn 46 closed
+CLIENT: 0.000599
+WIRE: 0.004910
+Hit endpoint: /get
+SERVER: 0.004064
+conn 47 closed
+CLIENT: 0.000384
+WIRE: 0.006060
+Hit endpoint: /get
+SERVER: 0.003408
+conn 48 closed
+CLIENT: 0.000385
+WIRE: 0.005432
+Hit endpoint: /get
+SERVER: 0.004254
+conn 49 closed
+CLIENT: 0.000419
+WIRE: 0.006424
+Hit endpoint: /get
+SERVER: 0.003279
+conn 50 closed
+CLIENT: 0.000383
+WIRE: 0.005307

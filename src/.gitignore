@@ -14,4 +14,3 @@ setup.*
 # testing
 run.sh
 nigori.db*
-data
