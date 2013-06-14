@@ -12,7 +12,7 @@ Overall, this section will highlight how the above two points, and other ideas o
 
 \section{Choice of Protocol: Nigori}
 When we began work on this thesis, we decided to choose Nigori for our protocol investigation for several reasons.
-On the one hand, it is a fairly new protocol, still under active developement, yet that has gone through several iterations already, as can be seen in Figure \ref{fig:timeline}.
+On the one hand, it is a fairly new protocol, still under active development, yet that has gone through several iterations already, as can be seen in Figure \ref{fig:timeline}.
 The project was initially started at Google, with a draft specification by Ben Laurie in 2010 \cite{NigoriDraft} and an initial proof--of--concept implementation in python, coupled with a later introduction into the Chrome browser for private data synchronization.
 It proposed a security protocol, and an implicit system revolving around it, that would allow users to login to a server and use it for data storage, while encrypting the content such that the server would be unaware of what the data actually represented.
 The timeline of the project later involved Alastair Beresford creating a Java version of the software in 2011, while at Google with an RFC \cite{NigoriRFC} of the protocol specification also in the works.
@@ -25,7 +25,7 @@ On the other hand, Nigori was interesting from the point of view of protocol ana
 As a security protocol, it incorporated and covered many of the core aspects of information security, despite its relatively young age.
 We list some of these concepts below, with short descriptions, yet we highlight them more, as we go through the working of the protocol, per se.
 \begin{description}
-\item[Confidentiality] refers to the act of preventing disclore or discovery of information, both with regards to a user's identity, as well as his respective data.
+\item[Confidentiality] refers to the act of preventing disclosure or discovery of information, both with regards to a user's identity, as well as his respective data.
 
 \item[Integrity] is the property that ensures that data is accurately and consistently held, once provided, meaning it cannot be altered in any unauthorized or undetectable form.
 
@@ -67,7 +67,7 @@ The primary use of this is as conflict resolution mechanics -- through the \text
 However, this feature also helps with data availability, as previously mentioned, by allowing data to be fetched from various data stores.
 In this regard, Nigori was strongly influenced by the Bayou system \cite{Bayou} and their conclusive findings that, for content synchronization and achieving data consistency, the application defined merging and conflict resolution phases are paramount.
 This is especially true in the context of having a choice between actively resolving conflicts through automatic developer defined procedures or marking the data as unavailable until conflicts get resolved, considering that the initial cause of the conflict might be a device that is not reachable at the respective time.
-The latter is undesirable, considering the \textbf{avaiability} property of the protocol.
+The latter is undesirable, considering the \textbf{availability} property of the protocol.
 
 \myfig{Synchronization and separation of trust in Nigori.}{sync}{1}
 
@@ -181,7 +181,7 @@ Overall, the provided interface acts much like remote procedural calls, with eac
     \hline
     \multirow{3}{*}{\pbox{10cm}{User \\ management}} & \multicolumn{2}{l|}{Authenticate} & Authenticates the user. \\\cline{2-4}
     & \multicolumn{2}{l|}{Register} & Registers the user and creates a data store. \\\cline{2-4}
-    & \multicolumn{2}{l|}{Unegister} & Unregisters the user and deletes all content. \\\hline
+    & \multicolumn{2}{l|}{Unregister} & Unregisters the user and deletes all content. \\\hline
     \multirow{5}{*}{User data} & \multicolumn{2}{l|}{Put}& Uploads data for the user. \\\cline{2-4}
     & \multicolumn{2}{l|}{Delete}& Removes data for the user. \\\cline{2-4}
     & \multirow{3}{*}{Get} & Indices & Provides the first level of indices. \\\cline{3-4}
@@ -196,6 +196,7 @@ The various messages allowed in Nigori are primarily derived from the functional
 Moreover, while all requests expect a certain message format, some also deliver responses back to the client, which in turn are also a message, in the aforementioned sense.
 Together, these messages describe the \textbf{vocabulary} used by Nigori.
 As functionality goes, the messages are split into two main categories, shortly described in Table \ref{table:messages}.
+Moreover, the corresponding endpoints are obtained by lowercasing the message name, potentially joining the pieces with hyphens, in the case of \myref{Get} type of messages -- for example \myref{/register} or \myref{/get-indices}.
 We give a more thorough explanation of them in the following:
 \begin{description}
   \item[User management] Since each server can keep track of data for multiple users, these messages are used for registering and unregistering users, as well as generic authentication.
@@ -264,7 +265,7 @@ Lastly, Mirage can also be used as the sum of its constituent parts, its respect
 As such, if application developers are targeting other types of deployments from the raw, unikernel approach, they can simply make use of the Mirage libraries and tailor their code towards compiling for the platform at hand.
 
 On the security side of using Mirage, one extra implicit benefit gained is the use of the underlying programming language.
-Mirage, the system and the implicit set of libraries, is writen in OCaml.
+Mirage, the system and the implicit set of libraries, is written in OCaml.
 As such, while it is expected to eventually allow for bindings in other languages, at the moment, integration is best done by writing applications in OCaml.
 This is important, as, from the beginning of the project, we wanted the implementation work to be done in a functional programming language with a static type system -- hence OCaml was fitting.
 The motivations for this are two fold.
@@ -282,7 +283,7 @@ All of these would in a sense be variations, or specializations of the core of t
 
 \myfig{Protocol development funnel.}{funnel}{0.4}
 
-On the use of libraries for development and protocol prototyping, using Mirage as a backend and OCaml as the implicit language actually provides for good synnergy.
+On the use of libraries for development and protocol prototyping, using Mirage as a backend and OCaml as the implicit language actually provides for good synergy.
 By default, Mirage comes with a package manager for OCaml which allows for certain libraries to be installed and used directly into applications built on top.
 As such, we were able to leverage quite a great deal of functionality in engineering the Nigori implementation.
 For example, for HTTP communication, we used the \myref{ocaml-cohttp} library's client and server, which provided us with plenty of direct and reliable functionality for the interactions.
@@ -291,5 +292,5 @@ What is more, the library also provided primitives for serializing and deseriali
 Certain cryptographic building blocks were directly available using the \myref{cryptokit} library, thus contributing to the primitives required by Nigori.
 For storage, a backend Object Relational Mapping (ORM) was also available, by using the \myref{ocaml-orm} library.
 This allows for carefully crafted OCaml types to be persisted using SQLite, in an almost seamless manner, with regards to the developer, while also allowing application specific OCaml code running directly on said types, without having to handle raw SQL.
-Finally, through the use of the \myref{js\_of\_ocaml} library, we were able to also compile the OCaml client to Javascript, with appropriate adjustments.
+Finally, through the use of the \myref{js\_of\_ocaml} library and toolchain, we were able to also compile the OCaml client to Javascript, with appropriate adjustments.
 All of these are explained in much greater detail in the remainder of the thesis.

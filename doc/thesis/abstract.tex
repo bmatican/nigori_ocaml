@@ -2,7 +2,14 @@
 {\Huge \bf Abstract}
 \vspace{24pt}
 
-TODO: Will complete at the end of the writing.
+Computer protocols are complicated mechanisms that require a great deal of versatility and robustness from their design to their implementation.
+To investigate the highly iterative process of protocol development, we decided to use concepts from the Operating Systems world.
+By using a Mirage, we could generate applications which would be completely self--contained, down to the explicit requirements from the underlying OS.
+Moreover, we could also redeploy such an application on multiple platforms, with little additional effort.
+For development purposes, we selected a protocol called Nigori to develop on top of Mirage.
+The protocol allows for applications to be built with a client side library that can automatically encrypt sensitive data before uploading to a remote server, such that the data cannot be read by any other external party.
+Our thesis shows how, using Mirage, we are able to develop the core of the protocol once, then have it compiled from the same implementation to both native bytecode, as well as Javascript.
+We also provide a performance analysis on developing the entire system on top of Mirage libraries.
 
 \newpage
 \vspace*{\fill}

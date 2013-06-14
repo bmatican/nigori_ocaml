@@ -3,34 +3,35 @@
 \setcounter{page}{1}
 
 Designing a computer protocol is generally a very difficult task.
-There have been many protocols proposed, and even implemented, across the years, that have not manage to stand the test of time (TODO: examples?).
+There have been many protocols proposed, and even implemented, across the years, that have not manage to stand the test of time.
 Those that have, on the other hand, have many things in common, and there have been attempts to document what actually makes a protocol successful \cite{RFC5218}.
 From their simplicity and proper degree of specificity, to their robustness and inherent scalability, all good protocols share certain traits.
-However, to achieve these, protocols generally go through a significant amount of trials and iterations, in their design phase.
+However, to achieve these, protocols generally go through a significant amount of trials and iterations, in their design and implementation phases.
 
-As such, one of the goals of this thesis was to analyze, get a better understanding of and potentially improve the process of protocol design.
-To achieve this, we decided to use some techniques from the operating system's world, particularly, the concept of \textit{library operationg systems} (libOS).
-TODO: more references.
-As such, we chose to work with Mirage \cite{Mirage}.
-Mirage is a system that allows applications to be developed on top of its libraries and subsequently have them deployed as single instances of an operating system, \textit{unikernels}, packaged only with the minimum requirements the applications possess.
-Due to Mirage's internal workings, this unikernel can then be deployed directly on top of a hypervisor, such as Xen \cite{Xen}, on machine in the cloud, such as the Amazon EC2 clusters (TODO: ref).
+As such, one of the goals of this thesis was to analyze, get a better understanding of and potentially improve upon protocol development.
+To achieve this, we decided to use some techniques from the Operating Systems world, particularly relating to \textit{library Operation Systems} (libOS) \cite{libOS}.
+The main idea behind a libOS is that the application beyond developed also encapsulates much of the functionality it requires from the underlying OS, in its own address space and offers a thin communication afterwards with the actual host OS kernel.
+As such, this gives the application a higher degree of control, and, implicitly, both security and a higher rate of iteration.
+To this end, we chose to work with Mirage \cite{Mirage}, a system that allows applications to be developed on top of its libraries and subsequently have them deployed as single instances of an OS, \textit{unikernels}, packaged only with the minimum requirements that the application has.
+Due to Mirage's internal workings, this unikernel can then be deployed directly on top of a hypervisor, such as Xen \cite{Xen}, on machines in the cloud, such as the Amazon EC2 clusters \cite{AmazonEC2}.
+Thus, Mirage takes the concept of libOS one step further, by providing all of the functionality of the underlying OS next to the application.
 However, due to it's modular and library oriented design, Mirage also allows for building applications that just run as native code, for example, on a UNIX system.
 This comes, in a large part, due to the fact that Mirage is almost entirely built in OCaml, a functional programming language that can be compiled down to native bytecode.
 However, as part of the OCaml ecosystem, Mirage also makes use and adapts a great deal of libraries and available technologies.
 As such, the cross--platform compilation can go one step further and one can create fully functional Javascript applications from the same base OCaml code, with minimal binding code.
-The modularity aspects, combined with the cross--platform compilation ability made Mirage an excellent choice for protocol development.
+The modularity aspects, combined with the cross--platform compilation ability made Mirage an excellent choice for experimenting with protocol development.
 
-One last implicit feature of Mirage also dictated the underlying protocol to be analyzed.
+One last implicit feature of Mirage also dictated the protocol to be analyzed.
 As part of its unikernel, minimalistic deployment methodology, Mirage successfully shrinks the Trusted Computing Base (TCB) of an application by only delivering kernel functionality that is to be used.
 Moreover, by using OCaml's type safety features, any development work also benefits from the added layer of security.
 Implicitly, we decided to analyze a security protocol.
 
-Our choice was Nigori \cite{NigoriDraft}, a protocol and underlying system, which would allow users to store versioned pieces of data encrypted in such a way that, the server or entity responsible of the storage would not be able to read the user's data, or otherwise modify or delete it without a trace.
-In and of itself, Nigori was a good idea as, with the advent of cloud storage, data privacy became a much more investigated topic and this was a system that could directly empower the user.
-As a computer protocol, Nigori was interesting as its constituent parts were relatively simple: it primarily featured a client side library for data and cryptographic key management, a server for data storage and users authentication and shared communication principles, such as HTTP requests and structured messages.
+Our choice was Nigori \cite{NigoriDraft}, a protocol and underlying system, which would allow users to store versioned pieces of data encrypted in such a way that, the entity responsible for storage would not be able to read the user's data, or otherwise modify or delete it without a trace.
+With the advent of cloud storage, data privacy has become a much more investigated topic and as such, Nigori was highly interesting, as it could directly empower the user.
+As a computer protocol, Nigori was intriguing as its constituent parts were relatively simple: it primarily featured a client side library for data and cryptographic key management, a server for data storage and user authentication, and shared communication principles, such as HTTP requests and structured messages.
 This modular composition went well inline with Mirage and its library approach to design and development.
 Moreover, Nigori was a relatively young protocol, having its first specification in 2010, yet over the past years, featuring several alterations and versions of proof--of--concept implementations.
-Many of these came from an inherent need to target different platforms with the software, as the number of different types of devices (and implicitly platforms to run the sofware) increased on both PCs, laptops, mobiles or plain browsers.
+Many of these came from an inherent need to target different platforms with the software, as the number of different types of devices (and implicitly platforms to run the software) increased on both PCs, laptops, mobiles or plain browsers.
 Nevertheless, this very fact made it a solid test for Mirage's ability to target multiple platforms through separate compilation.
 Finally, as an actual security protocol, Nigori was remarkably sturdy for its young age, managing to successfully cover the three pillars of information security (Confidentiality, Integrity and Availability) and thus offering proper security mechanics to its users.
 All of these above points made Nigori a great candidate for analyzing a computer protocol and providing a proof--of--concept implementation using Mirage.
@@ -38,7 +39,7 @@ As such, the outcome of the thesis was the actual Nigori system, implemented in 
 Implicitly, the analysis was aimed at both the protocol workings, in their theoretical, specification form, the tools and libraries used, as well as the practical working of our implementation of Nigori, to show that, performance wise, it operates within acceptable boundaries.
 
 The remainder of this thesis is structured as follows.
-In Chapter \ref{chapter:background}, we discuss the background knowledge needed to understand the work done, together with more of the explicit motivation behind the various choices made.
+In Chapter \ref{chapter:background}, we discuss background knowledge needed to understand the work, together with some more motivation and choices.
 In Chapter \ref{chapter:implementation}, we go through the actual implementation process discussing both the resulting system and its pieces, as well as highlighting some aspects of the cross--platform compilation to Javascript.
-Over Chapter \ref{chapter:evaluation}, we look at both the implicit contributions made in light of the work, such as the modifications brought onto either the Nigori specification or the tools used, as well as the explicit contribution, the system itself, and some performance metrics of it.
+Over Chapter \ref{chapter:evaluation}, we look at both the implicit contributions made in light of the work, such as the modifications brought onto either the Nigori specification or the tools used, as well as the explicit contribution, the system itself, and some of its performance metrics.
 Finally, in Chapter \ref{chapter:conclusion}, we draw some conclusions for the conducted work and give directions for future work.

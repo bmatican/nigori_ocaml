@@ -5,8 +5,6 @@ Nevertheless, due to the nature of the interactions between these two pieces, qu
 This chapter is modeled after the actual implementation, showing the shared code, and the client and the server in separation, while also discussing the interactions between them.
 In addition to describing the base OCaml implementation, this chapter also provides details about the separate compilation from OCaml code to JavaScript, along with both what it requires, as well as what it entails.
 
-TODO: potentially add a figure or set of figures showing module dependencies and individual pieces, to help with direct naming.
-
 \section{Shared}
 The corresponding section of the codebase for shared code actually represents the core of the application.
 For the most part, components in this category are used by both the server and the client.
@@ -92,15 +90,13 @@ As for constants, these are primarily the ones used for cryptography.
 
 \section{Server}
 On the server side, there is a relatively simple and direct pipeline of actions taken.
-On startup, the server instantiates the internal configuration, choses the database to be used for storage, starts up the Mirage webserver to handle requests from clients and attaches the custom request handler to it.
+On startup, the server instantiates the internal configuration, chooses the database to be used for storage, starts up the Mirage webserver to handle requests from clients and attaches the custom request handler to it.
 The handler is responsible for enforcing the protocol rules with regards to commands and structure.
 Thus, it must check for validity of both endpoints and data, then ultimately unpacking the client query and translating it into a command to the underlying storage and / or into an appropriate response back to the client.
 
-TODO: figure for endpoint validation process
-
 \subsection{Request Handling}
-Figure (TODO: ref figure) shows the flow diagram of generic actions taken for processing an incoming request.
-Every request the server receives is first verified against the list of valid endpoints.
+Every request the server receives it forwards to the internal handler.
+There, the request path is first verified against the list of valid endpoints.
 If the endpoint is valid, the request is then checked to be of according type -- for now, just POST requests are accepted.
 The request body is afterwards deserialized, from the expected JSON format supported at the moment.
 Then, the content pieces are decoded from Base64.
@@ -157,117 +153,95 @@ This side of the server also makes use of a special module called \myref{User} w
 At the moment, that is the user's public key and its respective hash, together with a (potentially human readable form) name and the registration date when the user was accepted into the system.
 This information is useful for tracking and logging reasons.
 
-TODO: refactor this; add pictures; re--indent
+\begin{table}[H]
+  \centering
+  \begin{tabular}{ |c|c|c|c| }
+    \hline
+    Internals & User Management & Data Management & Metadata \\\hline
+    \hline
+    \multirow{5}{*}{\pbox{20cm}{create}} &
+    \multirow{5}{*}{\pbox{20cm}{get\_user \\ add\_user \\ delete\_user}} &
+    \multirow{5}{*}{\pbox{20cm}{put\_record \\ delete\_record \\ get\_record \\ get\_indices \\ get\_revisions}} &
+    \multirow{5}{*}{\pbox{20cm}{check\_and\_add\_nonce \\ clear\_nonces}} \\
+    &&& \\
+    &&& \\
+    &&& \\
+    &&& \\
+    \hline
+  \end{tabular}
+  \caption{Nigori database functionality.}
+  \label{table:database}
+\end{table}
 
-As far as functionality goes, the database module signature is split into four sections (we provide the OCaml signatures for ease of understanding):
+As far as functionality goes, the database module signature is split into four sections, as described in Table \ref{table:database}.
+
+\paragraph{Internals} ~\\
+This section contains the actual internal datatype used to represent the datatype, across OCaml code and one single function, to create an instance of the database.
+At the moment, the creation function allows for one single parameter, an implicit name for the database, which can be used, in case of persistency, to denote the file or actual database name.
+The only important note to make here is that, in order to keep state across the application, we pass the instance of the database around throughout function calls.
+As the database is functorized, we decide which type we want to instantiate when we start the server, then subsequently create one and use until the webserver shut down.
+
+\paragraph{User Management} ~\\
+In order to manage user related data, we use an extra server side module, \myref{User}, which encapsulates the data that we require: the public key with which the user registers, together with a computed hash of it, for faster referencing (\myref{SHA-1} hash), as well as a (potentially human readable form) name of the user and the date it first registered with the data store, for logging and data analysis.
+We use this to provide the three pieces of functionality: adding, removing and obtaining information about users, respectively.
+
 \begin{description}
-  \item[Datatype] the internally used datatype and the instantiation function
-  \begin{itemize}
-    \item \myref{type t} \\
-    This represents the internal datatype that, in this case, will be used as an instance of the module.
-    In effect, each implementation will have this as the main storage component, be it an in--memory OCaml \myref{Hashtbl}, some form of an SQL wrapper, a wrapper over the HTML5 LocalStorage, or whatever else would be required.
-    \item \myref{val create : unit -> t} \\
-    This is used to actually instantiate the database.
-    When the server starts up, before it starts the webserver and request handler, it instantiates a database that will be used across all requests.
-    In light of this datatype usage, the remainder of the module functions all take a named parameter \myref{database:t}, which is supposed to be the instance of the database that the server has access to.
-  \end{itemize}
+\item[\myref{add\_user}]
+For registering a user with the Nigori store, the protocol requires that he provides his public key information.
+As such, on the server, we store this and the other pieces of information, indexed by the \myref{SHA-1} hash of the public key, for faster access.
 
-  \item[User management] the overarching user related functions for allowing a database to handle data for multiple users at the same time
-  \begin{itemize}
-  \item \myref{val add\_user : database:t -> pub\_key:User.public\_key -> pub\_hash:User.hash -> bool} \\
-  In order to even begin holding user data, the server must first register the respective user(s).
-  This function accomplishes exactly that.
-  It receives the public key the user wishes to be authenticated with, \myref{pub\_key:User.public\_key}, as well as a hash of that respective key, \myref{pub\_hash:User.hash}.
-  This data would then be stored internally, for later lookup.
-  Since the hash is used in messages instead of the actual key (for space efficiency reasons), we implicitly take the liberty us using this hash as the main keying factor across the storage.
-  This is, however, an implementation decision, which can potentially affect security, yet, since the protocol specification considers this enough for message transmission, the server can easily make the same assumptions.
+\item[\myref{delete\_user}]
+When the user unregisters, the only requirement is a valid authentication message encapsulated in the \myref{Unregister} message.
+This proves to the server the identity of the user and as such allows it to act on his behalf.
+This piece of functionality removes the user's data from the store as well as his identifying information.
 
-  What is more, this hash is supposed to be computed from the actual public key and, moreover, should be generated in the same way by both the client and server.
-  However, for the versatility of the specification, and, implicitly, the implementation, it is left, as often as possible, as a parameter, as well as used as a hash in messages.
-  Nevertheless, the implementation of the \myref{User} module, allows for the automatic generation of the hash, assuming the public key is given.
+\item[\myref{get\_user}]
+This functionality is primarily used for internal purposes, to obtain an instance of the \myref{User} module, which would imply that the user at hand is registered in the system.
+For all data requests, the database is engineered in such a way to require this as proof that the authentication step has been properly handled.
+\end{description}
 
-  Given the above parameters, the database attempts to register the user internally.
-  If this is possible, it does so and returns \myresult{true}.
-  Alternatively, it returns \myresult{false}.
+\paragraph{Data Management} ~\\
+With respect to data, the database must provide mirroring functionality to the messages that are available for data manipulation.
+As such, users can add, remove and get data, as well as information about their data, such as all available indices and all the revision history information for a certain index.
+All of this functionality already assumes that the user is properly authenticated.
+\begin{description}
+\item[\myref{put\_record}]
+To add data to the database, the user must explicitly provide both an index, a revision and the respective piece of data.
+If the index does not exist, then a new one, as well as the corresponding revision will be generated and the data will be added under it.
+If however the index already exists, than the provided revision must not always exist in the database, as data overwrites are not allowed.
 
-  \item \myref{val get\_user : database:t -> pub\_hash:User.hash -> User.t option} \\
-  In order to actually get the information of a particular user, the database has to hold all the information necessary for an instance of the \myref{User} module internally.
-  Across both the in--memory version and the SQL one, this is kept keyed by the hash of the public key of that respective user.
-  Thus, the parameter \myref{pub\_hash:User.hash} is used for lookup to get all other user related data that might be useful for authentication purposes.
+\item[\myref{delete\_record}]
+In order to remove data from the store, the user can choose an explicit index and revision, to target one item of data.
+However, the user can also issue a delete for an entire index, implicitly pruning the entire revision history of that index.
+It is an error to provide an invalid index and / or revision.
 
-  If a user matching the respective hash exists, the function wraps up the \myref{User} instance into an option, returning \myresult{Some(user)}.
-  Alternatively, it returns \myresult{None}.
+\item[\myref{get\_record}]
+For obtaining raw data from the store, the user can again, choose an explicit index and revision and be served one instance of data.
+However, for history purposes, the user can also provide just the index of interest and get back the full revision history and associated data.
+Yet again, it is an error to provide an invalid index and / or revision.
 
-  \item \myref{val have\_user : database:t -> pub\_hash:User.hash -> bool} \\
-  A simplified version of the \myref{get\_user} function, this simply checks if the respective user is registered on this server.
-  The respective \myref{pub\_hash:User.hash} is again used for lookup.
+\item[\myref{get\_indices}]
+This function provides a top level overview of the data in the store for the user, offering all indices that have data associated with them.
 
-  The function returns appropriately \myresult{true} if the user exists and \myresult{false} otherwise.
+\item[\myref{get\_revisions}]
+This function goes one level deeper, and, given an index, provides the respective revisions from the revision history associated with that index.
+It is an error to provide an invalid index, however.
+\end{description}
 
-  \item \myref{val delete\_user : database:t -> user:User.t -> bool} \\
-  This function servers as the opposite of the \myref{add\_user} one.
-  It will effectively deregister the respective user from the server.
-  Moreover, all of his respective data should also be deleted at this time, as well.
+\paragraph{Metadata} ~\\
+The server is required to hold certain pieces of metadata from the client requests, particularly nonce information.
+The \myref{Nonce} module, as previously mentioned, comprises of simply 8 bytes of information, containing a time stamp and a single use message and functionality to check its validity.
+Logging these in the server helps prevent any potential replay attacks, by disallowing requests which do not present a valid (timely) nonce.
+Nevertheless, the server cannot store these indefinitely.
+Hence, a configuration parameter for the server decides the amount of time that nonce data should be kept.
+By default, this is set to two days of logging.
+Implicitly, for management purposes, the server has two pieces of functionality related to this.
+\begin{description}
+\item[\myref{check\_and\_add\_nonce}]
+This function serves the dual purpose of both verifying the validity of an incoming nonce from a client, and, if proper, to add it to the list of seen nonces from the respective client.
 
-  An important note is that this function receives a \myref{user:User.t} as a parameter.
-  This is a design choice that should server as an extra level of internal security.
-  Since this should be a rare occurrence, the potential extra query that might be required should be inconsequential (performance wise) and thus justify the divergence from diverging from the standard of this module's overall signature, of using the public key hash as a lookup key.
-  As such, the database requires that explicit existence of a \myref{User}, which can only be obtained after proper authentication in the system.
-
-  If the function is successful and the user can be removed, the function returns \myresult{true}.
-  Alternatively, if the user does not exist, or there is some internal inconsistency, the function returns \myresult{false}.
-
-  \item \myref{val get\_public\_key : database:t -> pub\_hash:User.hash -> User.public\_key option} \\
-  This is more of a convenience function for directly accessing a user's public key, assuming it is available, as in the user is registered.
-  If so, the function wraps it into an option, returning \myresult{Some(key)}, alternatively returning \myresult{None}.
-  \end{itemize}
-  \item[User data] the actual functionality for handling the data of individual users; all of these take an extra parameter, the actual instance of the \myref{User} module for which actions will be performed, signifying that that respective user is authenticated in the system
-  \begin{itemize}
-  \item \myref{val put\_record : database:t -> user:User.t -> index:string -> revision:string -> data:string -> bool} \\
-  This function is to be used to add content into the database, for a given user.
-  As the user data is supposed to be basically a two level index--value store, for each respective user, this function is parameterized by everything needed to identify all components accordingly.
-  The user stores data under certain indices, denoted here by the \myref{index:string} parameter.
-  Under each such \myref{index}, there can be multiple revisions, as denoted by the  \myref{revision:string} parameter, each with its own version of the respective content, as finally denoted by the \myref{data:string} parameter.
-
-  The function respectively returns \myresult{true} if the action could be performed. However, if the user is not authenticated, or the revision exists and the data is inconsistent, then the function returns \myresult{false}.
-
-  \item \myref{val get\_record : database:t -> user:User.t -> index:string -> ?revision:string option -> unit -> Messages\_t.revision\_value list option} \\
-  This function is technically the getter counterpart of the \myref{put\_record} function.
-  The \myref{index:string} parameter specifies an index inside the store to access.
-  If the \myref{revision:string option} parameter can specify an explicit \myref{revision} that is required.
-
-  With no explicit \myref{revision} required, the function gathers a list of all revisions under the respective \myref{index}. Alternatively, it wraps the explicit result in a list of one element. Assuming all goes well, the function further wraps this list in an option, returning \myresult{Some(list)}, otherwise, returning \myresult{None}. The result list is directly encoded in message format, hence the \myref{Message\_t} in the output of the signature, which is the autogenerated OCaml type, from the \myref{ATD}.
-
-  \item \myref{val get\_indices : database:t -> user:User.t -> string list option} \\
-  Since data for every user will be kept in some form of two level index--value format, this function is tasked with simply getting all the \myref{index} names registered for a particular user.
-
-  If the user exists, the function returns the list, potentially empty, wrapped in an option, \myresult{Some(list)}, else, it returns \myresult{None}.
-
-  \item \myref{val get\_revisions : database:t -> user:User.t -> index:string -> string list option} \\
-  This function goes one level deeper than the \myref{get\_indices} function.
-  For a particular user, this function will return all the respective \myref{revision} names under the given \myref{index} given as parameter.
-
-  If the user exist and has the given \myref{index} registered, the function returns the potentially empty list wrapped in an option, myresult{Some(list)}, or alternatively, \myresult{None}.
-
-  \item \myref{val delete\_record : database:t -> user:User.t -> index:string -> ?revision:string option -> unit -> bool} \\
-  This function allows user to also remove content they have uploaded.
-  Given the \myref{index} and optionally the \myref{revision} parameters, this function can delete either one particular revision or all revisions under the given \myref{index}.
-
-  If the \myref{index} and optionally, the \myref{revision} exist and the user is properly authenticated, the operation returns \myresult{true}, otherwise, \myresult{false}.
-
-  \end{itemize}
-  \item[Metadata] the nonce related functionality, responsible for ensuring timeliness of messages and replay protection
-  \begin{itemize}
-  \item \myref{val check\_and\_add\_nonce : database:t -> nonce:Nonce.t -> pub\_hash:User.hash -> bool} \\
-  This function is responsible for checking that the respective \myref{Nonce} is acceptable for the user denoted by the \myref{pub\_hash:User.hash} parameter.
-  The latter is implicitly supposed to be used to match an existing user and also lookup in whichever datastructure will keep track of the nonces.
-
-  If the nonce is acceptable in the context of this respective user, the function returns \myresult{true}, otherwise, it returns \myresult{false}.
-
-  \item \myref{val clear\_old\_nonces : database:t -> unit} \\
-  This function is supposed to be used to clear the internal tracking of nonces older than some server dependent amount of time.
-  The specification of the system does not give explicit suggestions for this, as this can depend from server to server, typically based on experienced load.
-  \end{itemize}
+\item[\myref{clear\_nonces}]
+Whenever this function is called, any outdated nonces are purged from the database.
 \end{description}
 
 \section{Client}
@@ -289,14 +263,36 @@ In order to function properly, the client required all components to work proper
 As such, most difficulties were experienced on the integration step of the work.
 The first problem was that the \myref{DSA} key generation had to work properly, and, as mentioned, this was quite cumbersome.
 Moreover, proper \myref{DSA} signatures on top of messages and proof that the respective signature verification mechanism worked right was needed.
-Lastly, message structure had to be fixed and useful for both client queries and potential server responses, together with all the beforementioned functionality encapsulated in the \myref{Message} module.
+Lastly, message structure had to be fixed and useful for both client queries and potential server responses, together with all the aforementioned functionality encapsulated in the \myref{Message} module.
 However, thanks to the proper methodology applied across the project, the integration work proved quite successful, from the side of what was being developed.
-Most problems that did arise came from the external tools being used, from the faulty \myref{DSA} implementation, to the lacking functionalty in the \myref{ATD} generation library.
+Most problems that did arise came from the external tools being used, from the faulty \myref{DSA} implementation, to the lacking functionality in the \myref{ATD} generation library.
 We discuss some more aspects of the usability of these in Chapter \ref{chapter:evaluation}.
 
 \section{JavaScript implementation}
-TODO: Discuss how the semi--automated version of the client to JS is done: functorizing the various pieces which were not directly available (such as the cryptography and HTTP client functionality) and replacing them with suitable Javascript library calls or implementations.
+In order to provide a working Javascript client, we used a toolchain and set of libraries called \myref{js\_of\_ocaml}.
+It allows for OCaml compiled bytecode to be directly converted into Javascript code.
+Nevertheless, certain features that are generally platform dependent do not function properly.
+As such, in order to obtain a working client, we had to functorize quite a portion of our code base.
+Nevertheless, this only implied abstracting the module signatures and instantiating modules that needed them, accordingly.
 
-TODO: Explain manual pieces and how they had to be glued together.
+For example, the most important pieces of functionality that we could not directly use, as we had them in OCaml, were the HTTP client, the cryptography parts and the JSON serialization.
+While that may sound daunting, in reality, it involved considerably less effort than expected.
+By functorizing the respective libraries, we were able to create other OCaml modules for each of the pieces we needed to replace to generate valid Javascript code.
+For instance, the \myref{js\_of\_ocaml} libraries come with a built in module called \myref{XmlHttpRequest}, which allows for HTTP requests.
+As such, abstracting the functionality needed and provided by our client was as simple as replacing the Mirage client with a separate indirection module that could be functorized either with the \myref{ocaml-cohttp} client, or the respective Javascript compliant one, depending on the targeting platform.
+Similarly, while we could keep the entire \myref{ATD} generated OCaml types, we replaced the JSON serialization, which uses OCaml IO functionality, with a \myref{js\_of\_ocaml} module called \myref{Deriving\_Json} which implicitly allowed for marshalling objects to and from JSON, in a safe manner.
 
-TODO: Potentially show how, in the end, after boilerplate is overcome, changes to core get propagated to client, leading to fast prototyping.
+For the cryptography part, however, we had to work a bit more.
+Some of the internals of the \myref{cryptokit} library use functionality, such as multiple precision arithmetics, which are platform dependent.
+As such, we had to find a suitable replacement.
+To that end, we used an actual Javascript library, called \myref{jsCrypto} \cite{jscrypto}, which conveniently provided all of the primitives we required, to be used in Javascript.
+Nevertheless, we still needed to create suitable OCaml modules that would act as indirection layers.
+Hence, for all the primitives we used, \myref{SHA-1}, \myref{HMAC}, \myref{AES}, \myref{DSA} and \myref{PBKDF}, we abstracted their interfaces, into indirection OCaml types.
+Afterwards, we replaced the previous modules with functorized implementations of these interfaces and we built the ones that would use the Javascript version.
+For the actual building, we used a functionality of \myref{js\_of\_ocaml} that allowed for explicitly calling other Javascript functions that were already loaded.
+Hence, we respectively had a double indirection, once through the OCaml interface and again towards directly calling the \myref{jsCrypto} functions.
+
+Albeit taking quite a bit of tweaking to fully understand the back and forth conversion between OCaml types and implicit Javascript objects, in the end, we were left with a functioning client for Nigori.
+Moreover, the way in which this was obtained, was rather semi--automated, considering most of the requirements, after understanding the workings, was functorizing the underlying pieces that needed to be swapped out.
+Thus, the outcome with regards to managing the protocol implementation was as we expected.
+We were able to develop the core of the protocol, in essence, only once, and then, using appropriate substitutions of the lower layer of functionality, essentially retarget the entire development towards deployment on a different platform.

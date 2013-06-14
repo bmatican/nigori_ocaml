@@ -1,11 +1,11 @@
 \chapter{Conclusion and Future Work} \label{chapter:conclusion}
 The main result of the work performed in this thesis is a fully--fledged, working proof--of--concept implementation of the Nigori protocol in OCaml, powered by Mirage libraries, together with cross--platform compiled clients in both native bytecode and Javascript.
 Our evaluation shows that the main aspects of the protocol fall into good functioning norms for the main pieces of functionality provided.
-The HTTP capabilities of the Mirage webserver and client, combined with going through a Mac networking stack, yield round trip times of 1 to 3 ms for requests on the same machine, thus proving minimal time constraints per request (TODO: reference web page load time averages).
+The HTTP capabilities of the Mirage webserver and client, combined with going through a Mac networking stack, yield round trip times of 1 to 3 ms for requests on the same machine, thus proving minimal time constraints per request, in contrast to, for example, Social Media Websites, which easily take upwards of 1 second \cite{PageLoadTimes}.
 Moreover, for application liveliness, the client side encryption and decryption times are well within ms times, with \myref{AES} encryption of a 100 mb file being just under 60 ms.
-This shows that applications can integrate Nigori for storing user secrets withouth affecting client side responsiveness in any considerable fashion.
-Lastly, our server SQLite backend database proved to be quite storage efficient, taking under 1\% of the expected amount of space for high numbers (10000) of items.
-Moreover, query wise, without implicit indexes, we get query times of roughly 1 second for a table with 1 million items, which is well within expected norms for an SQL database (TODO: reference?).
+This shows that applications can integrate Nigori for storing user secrets without affecting client side responsiveness in any considerable fashion.
+Lastly, our server SQLite backend database proved to be quite storage efficient, taking under 1\% of the expected amount of space for high numbers (10,000) of items.
+Moreover, query wise, without implicit indexes, we get query times of roughly 1 second for a table with 1 million items.
 
 As with our initial plans, a strong motivator for the work presented in this thesis was working with both Nigori and Mirage, which can easily be marked as works still under development.
 As such, part of the experience of working with both was assessing the feasibility and usability of both.
@@ -15,7 +15,9 @@ Several other tools and libraries, some as important as the storage backend SQLi
 
 Work on the Nigori protocol, per se, however, was much to expectations.
 As such, we were able to quickly iterate through the implementation of the protocol, until a working prototype became a reality.
-Moreover, due to the way in which the underlying pieces were crafted, the code could then be properly reused and abstracted so as to allow for a Javascript based client to make use of the same structure and functionality required of the core of the protocol.
+What is more, also as expected, we were able to find a number of locations (such as in the cryptography section) in the protocol specification which proved troublesome for implementations on a new platform, or in our case, in a language such as OCaml.
+Nevertheless, with regards to the cross--compilation part of the initial hypothesis, our work proved quite fruitful.
+Due to the way in which the underlying pieces were crafted during the initial development effort, the code could then be properly reused and abstracted so as to allow for a Javascript based client to make use of the same structure and functionality required of the core of the protocol.
 Albeit, the cross-compilation step to achieve this did require some tweaking efforts, the fact that we were able to primarily write one single implementation, with abstracted pieces of functionality and then target it to a completely different platform, was yet again, a proof--of--concept that this is achievable.
 
 Nevertheless, the advantages of leveraging Mirage leave plenty of room for future work.
@@ -25,8 +27,12 @@ Albeit potentially a small improvement, this could, nonetheless, lower the amoun
 Moreover, the overall efficiency of the underlying storage system could be enhanced by specializing the filesystem explicitly to the requirements of an SQL oriented database.
 This could overall help with the latency on the server side, considering a cloud deployment of Nigori.
 Moreover, as previously mentioned in Chapter \ref{chapter:background}, one of the main aspects of using Mirage is the minimization of the TCB.
-What this implicitly means is a hightened sense of security, as overall number of attack vectors are minimized to at best cover only the required aspects of an operating system that Nigori would require.
+What this implicitly means is a heightened sense of security, as overall number of attack vectors are minimized to at best cover only the required aspects of an operating system that Nigori would require.
 
 Finally, as previously mentioned, the client was implemented in a restricted fashion, without support for the synchronization requirements that Nigori is meant to support.
 As such, for a full version of the implementation, that side of the functionality needs to be added as well.
 Moreover, many of the aspects that we found that the Nigori specification could be improved on, such as adding means of negotiating algorithms for content signing, are as well avenues for potential future developments.
+
+Overall, we deem the work as highly productive.
+We were able to generate a working implementation of the Nigori protocol in OCaml, supported by Mirage.
+Moreover, we were able to supplement this by providing a proof--of--concept for the cross--platform compilation idea, between native bytecode and Javascript code, which motivated the use of OCaml and Mirage in the first place.

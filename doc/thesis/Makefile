@@ -3,7 +3,7 @@ BIBTEX=bibtex
 DVIPS=dvips
 PS2PDF=ps2pdf
 PAPER=acs-dissertation
-FILES=titlepage.tex declaration.tex abstract.tex introduction.tex \
+FILES=titlepage.tex declaration.tex abstract.tex ack.tex introduction.tex \
       background.tex implementation.tex evaluation.tex conclusion.tex
 
 .PHONY: clean all count
